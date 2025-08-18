@@ -1,7 +1,3 @@
-Here’s your restructured content with minimal changes (only headings adjusted for consistency and slight formatting tweaks). The core information remains intact:
-
----
-
 ### **1. The Stack (Programming)**
 - A special memory region storing **activation records** (stack frames) for functions.  
 - **Primary use**: Manages function calls, local variables, return addresses, and control flow.  
