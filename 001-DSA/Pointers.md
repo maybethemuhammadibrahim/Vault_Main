@@ -216,7 +216,3 @@ delete p;
 * `void*` is a universal pointer but requires casting.
 * Arrays decay into pointers when passed to functions.
 * Always **initialize pointers** and avoid dereferencing invalid memory.
-
----
-
-👉 Would you like me to also add a **special section with common interview-style pointer questions and their explanations**, so you can use these notes both for study and practice?
