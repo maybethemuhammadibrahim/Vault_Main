@@ -173,11 +173,6 @@ cout << *(p+2);   // 30
 ```
 
 ---
-Perfect 👌 I’ll insert a **well-structured section on 2D matrices as pointers** (with the double pointer dereference explanation and your arithmetic notes, plus extra clarifications). I’ll also format it neatly so it flows naturally between your **Arrays as Pointers** section and your **Pointer Arithmetic** section.
-
-Here’s the **newly arranged and detailed section**:
-
----
 
 ## 7. 2D Arrays as Pointers
 
@@ -254,11 +249,6 @@ Because `B[i][j]` is internally translated to `*(*(B + i) + j)`.
   * `*(*(B + i) + j)`
 
 ---
-
-👉 This section should now sit **right before your “Pointer Arithmetic” section**.
-
-Would you like me to also add a **visual diagram (ASCII memory layout with arrows showing dereferences)** for quick revision, or keep it text-only?
-
 ## 8. Common Pitfalls & Best Practices
 
 ❌ **Dereferencing NULL/Uninitialized Pointers**
