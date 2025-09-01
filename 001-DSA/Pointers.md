@@ -173,6 +173,91 @@ cout << *(p+2);   // 30
 ```
 
 ---
+Perfect 👌 I’ll insert a **well-structured section on 2D matrices as pointers** (with the double pointer dereference explanation and your arithmetic notes, plus extra clarifications). I’ll also format it neatly so it flows naturally between your **Arrays as Pointers** section and your **Pointer Arithmetic** section.
+
+Here’s the **newly arranged and detailed section**:
+
+---
+
+## 7. 2D Arrays as Pointers
+
+A **2D array** in C/C++ is essentially a **contiguous block of memory** arranged in rows and columns.
+
+For example:
+
+```cpp
+int B[2][3] = { {1, 2, 3}, {4, 5, 6} };
+```
+
+### How memory is laid out
+
+```
+Row 0 → [ 1   2   3 ]
+Row 1 → [ 4   5   6 ]
+```
+
+Stored **linearly in memory**:
+
+```
+[ 1 ][ 2 ][ 3 ][ 4 ][ 5 ][ 6 ]
+```
+
+### Decay into pointers
+
+* `B` → points to the first row (`&B[0]`), type: `int (*)[3]` (pointer to an array of 3 ints).
+* `*B` → points to the first element of row 0 (`&B[0][0]`).
+* `**B` → dereferences to the actual value at `B[0][0]` (→ `1` in this example).
+
+📌 **Answering “What does a single dereference of a double pointer do?”**
+If you have a `T **pp` (pointer to a pointer):
+
+* `pp` → address of a pointer
+* `*pp` → the pointer it points to (first level)
+* `**pp` → the actual value stored (second level dereference)
+
+In the case of a 2D array:
+
+* `B` → pointer to row
+* `*B` → pointer to column (row’s 0th element)
+* `**B` → actual integer stored
+
+---
+
+### 2D Pointer Arithmetic Examples
+
+Let `B[2][3]` again be:
+
+```
+B = [ [1, 2, 3], [4, 5, 6] ]
+```
+
+* `B + 1` → skips **1 full row** (3 ints) → `&B[1][0]`
+* `*B + 1` → skips **1 element in row 0** → `&B[0][1]`
+* `*(B + 1) + 1` → skips **1 row, then 1 element** → `&B[1][1]`
+* `*(*B + 1)` → value at row 0, col 1 → `2`
+* `*(*(B + 1) + 2)` → value at row 1, col 2 → `6`
+* `*(*(B + i) + j)` → general formula for accessing `B[i][j]`
+
+💡 **Why?**
+Because `B[i][j]` is internally translated to `*(*(B + i) + j)`.
+
+---
+
+### Key Insights
+
+* A **2D array is not exactly a `**` pointer**, but pointer arithmetic makes it behave similarly.
+* Rows are laid out **contiguously**, so pointer math works reliably.
+* `B[i]` is itself a pointer to the start of row `i`.
+* This explains why both notations are equivalent:
+
+  * `B[i][j]`
+  * `*(*(B + i) + j)`
+
+---
+
+👉 This section should now sit **right before your “Pointer Arithmetic” section**.
+
+Would you like me to also add a **visual diagram (ASCII memory layout with arrows showing dereferences)** for quick revision, or keep it text-only?
 
 ## 8. Common Pitfalls & Best Practices
 
