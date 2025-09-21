@@ -46,11 +46,11 @@ int interpolationSearch(int arr[], int size, int target) {
     int high = size - 1;
 
     while (low <= high && target >= arr[low] && target <= arr[high]) {
-        // Prevent division by zero
-        if (arr[high] == arr[low]) {
-            if (arr[low] == target) return low;
-            else return -1;
-        }
+        // // Prevent division by zero
+        // if (arr[high] == arr[low]) {
+        //     if (arr[low] == target) return low;
+        //     else return -1;
+        // }
 
         // Estimate the position (probe)
         int pos = low + (int)((double)(high - low) * (target - arr[low]) / (arr[high] - arr[low]));
@@ -72,14 +72,18 @@ int interpolationSearch(int arr[], int size, int target) {
   NOTE: This version always loops full range (no early exit / optimization).
 */
 void binarySort(int arr[], int size) {
+    bool swapped = false;
     for (int i = 0; i < size; i++) {                      // Outer pass (starts at 0 each time)
         for (int j = 0; j < size - 1; j++) {              // Inner loop always from 0
             if (arr[j] > arr[j + 1]) {                    // If adjacent elements out of order
                 int temp = arr[j];
                 arr[j] = arr[j + 1];
-                arr[j + 1] = temp;                        // Swap them
+                arr[j + 1] = temp; 
+                swapped = true;                       // Swap them
             }
         }
+        if(!swapped)
+            return;
     }
 }
 
@@ -89,8 +93,9 @@ void binarySort(int arr[], int size) {
   and move it to the front.
 */
 void selectionSort(int arr[], int size) {
+    int minIndex, temp;
     for (int i = 0; i < size - 1; i++) {                  // Position to fill with smallest
-        int minIndex = i;                                 // Assume current is smallest
+        minIndex = i;                                 // Assume current is smallest
         for (int j = i + 1; j < size; j++) {              // Find a smaller element
             if (arr[j] < arr[minIndex]) {
                 minIndex = j;
