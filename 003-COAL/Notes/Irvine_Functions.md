@@ -14,8 +14,8 @@ Format per entry:
 
 ## 1. Clrscr
 Clears the console screen and moves cursor to (0,0).
-How to use: Just call `Clrscr` before output to reset the screen.
-Registers: None required; none returned.
+**How to use:** Just call `Clrscr` before output to reset the screen.
+**Registers:** None required; none returned.
 ```asm
 .data
 
@@ -26,11 +26,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Console screen clears completely and cursor moves to top-left corner.
+
+---
 
 ## 2. Crlf
-Prints newline (carriage return + line feed).
-How to use: Call after output to advance to next line.
-Registers: None.
+**Plain English description:** Prints newline (carriage return + line feed).
+**How to use:** Call after output to advance to next line.
+**Registers:** None.
 ```asm
 .data
 
@@ -40,11 +43,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Cursor moves to beginning of next line.
+
+---
 
 ## 3. WriteBin
-Displays unsigned 32-bit value in EAX as binary.
-How to use: Load EAX with value, call.
-Registers: Input EAX = value to print.
+**Plain English description:** Displays unsigned 32-bit value in EAX as binary.
+**How to use:** Load EAX with value, call.
+**Registers:** Input EAX = value to print.
 ```asm
 .data
 
@@ -55,11 +61,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** "0000 0000 0000 0000 0000 0000 1010 1010" (spaced binary representation)
+
+---
 
 ## 4. WriteChar
-Writes character in AL.
-How to use: Put ASCII code in AL, call.
-Registers: Input AL = character.
+**Plain English description:** Writes character in AL.
+**How to use:** Put ASCII code in AL, call.
+**Registers:** Input AL = character.
 ```asm
 .data
 
@@ -70,11 +79,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** "A" (the character 'A' displayed)
+
+---
 
 ## 5. WriteDec
-Writes unsigned decimal in EAX.
-How to use: Load EAX with value, call.
-Registers: Input EAX = unsigned number.
+**Plain English description:** Writes unsigned decimal in EAX.
+**How to use:** Load EAX with value, call.
+**Registers:** Input EAX = unsigned number.
 ```asm
 .data
 
@@ -85,11 +97,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** "12345"
+
+---
 
 ## 6. WriteHex
-Writes 32-bit hex value in EAX (uppercase).
-How to use: Load EAX, call.
-Registers: Input EAX = value.
+**Plain English description:** Writes 32-bit hex value in EAX (uppercase).
+**How to use:** Load EAX, call.
+**Registers:** Input EAX = value.
 ```asm
 .data
 
@@ -100,11 +115,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** "ABCDEF12"
+
+---
 
 ## 7. WriteInt
-Writes signed decimal in EAX.
-How to use: Put signed value in EAX.
-Registers: Input EAX = signed integer.
+**Plain English description:** Writes signed decimal in EAX.
+**How to use:** Put signed value in EAX.
+**Registers:** Input EAX = signed integer.
 ```asm
 .data
 
@@ -115,11 +133,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** "-1234"
+
+---
 
 ## 8. WriteString
-Writes null-terminated string at EDX.
-How to use: Set EDX = OFFSET string, call.
-Registers: Input EDX = address of string.
+**Plain English description:** Writes null-terminated string at EDX.
+**How to use:** Set EDX = OFFSET string, call.
+**Registers:** Input EDX = address of string.
 ```asm
 .data
 msg BYTE "Hello, Irvine32!",0
@@ -131,11 +152,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** "Hello, Irvine32!"
+
+---
 
 ## 9. ReadChar
-Reads one key, returns ASCII in AL (no echo suppression).
-How to use: Call; AL gets character.
-Registers: Output AL = character.
+**Plain English description:** Reads one key, returns ASCII in AL (no echo suppression).
+**How to use:** Call; AL gets character.
+**Registers:** Output AL = character.
 ```asm
 .data
 
@@ -146,11 +170,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Program waits for single keypress, character stored in AL (not displayed)
+
+---
 
 ## 10. ReadDec
-Reads unsigned decimal number from keyboard.
-How to use: Call; user types digits + Enter.
-Registers: Output EAX = unsigned value.
+**Plain English description:** Reads unsigned decimal number from keyboard.
+**How to use:** Call; user types digits + Enter.
+**Registers:** Output EAX = unsigned value.
 ```asm
 .data
 
@@ -161,11 +188,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Program waits for numeric input, stores unsigned integer in EAX
+
+---
 
 ## 11. ReadHex
-Reads hexadecimal number (0–9, A–F).
-How to use: Call; type hex + Enter.
-Registers: Output EAX = value.
+**Plain English description:** Reads hexadecimal number (0–9, A–F).
+**How to use:** Call; type hex + Enter.
+**Registers:** Output EAX = value.
 ```asm
 .data
 
@@ -176,11 +206,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Program waits for hexadecimal input, stores converted value in EAX
+
+---
 
 ## 12. ReadInt
-Reads signed decimal number.
-How to use: Call; may include leading '-' sign.
-Registers: Output EAX = signed value.
+**Plain English description:** Reads signed decimal number.
+**How to use:** Call; may include leading '-' sign.
+**Registers:** Output EAX = signed value.
 ```asm
 .data
 
@@ -191,11 +224,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Program waits for signed integer input, stores value in EAX
+
+---
 
 ## 13. ReadString
-Reads line of text (up to ECX chars). Stores null terminator. Returns length.
-How to use: EDX=buffer, ECX=max (not counting terminator). Call.
-Registers: Input EDX = buffer address, ECX = max count. Output EAX = chars read (not including null).
+**Plain English description:** Reads line of text (up to ECX chars). Stores null terminator. Returns length.
+**How to use:** EDX=buffer, ECX=max (not counting terminator). Call.
+**Registers:** Input EDX = buffer address, ECX = max count. Output EAX = chars read (not including null).
 ```asm
 .data
 buffer BYTE 51 DUP(0)   ; Room for 50 chars + null
@@ -209,11 +245,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Program waits for text input, stores string in buffer and length in EAX
+
+---
 
 ## 14. Delay
-Pauses execution for EAX milliseconds.
-How to use: Set EAX to delay interval; call.
-Registers: Input EAX = ms delay.
+**Plain English description:** Pauses execution for EAX milliseconds.
+**How to use:** Set EAX to delay interval; call.
+**Registers:** Input EAX = ms delay.
 ```asm
 .data
 
@@ -224,11 +263,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Program pauses for 1 second with no visible output
+
+---
 
 ## 15. Randomize
-Seeds pseudo-random generator with system time.
-How to use: Call once near program start.
-Registers: None required.
+**Plain English description:** Seeds pseudo-random generator with system time.
+**How to use:** Call once near program start.
+**Registers:** None required.
 ```asm
 .data
 
@@ -239,11 +281,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** No visible output, random number generator is seeded
+
+---
 
 ## 16. DumpRegs
-Displays register state (EAX, EBX, ECX, EDX, ESI, EDI, EBP, ESP, EIP, EFLAGS).
-How to use: Call at point of interest.
-Registers: Inputs none; outputs to console.
+**Plain English description:** Displays register state (EAX, EBX, ECX, EDX, ESI, EDI, EBP, ESP, EIP, EFLAGS).
+**How to use:** Call at point of interest.
+**Registers:** Inputs none; outputs to console.
 ```asm
 .data
 
@@ -255,11 +300,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Table showing all register values including EAX=12345678h, ECX=0000DEADh
+
+---
 
 ## 17. DumpMem
-Displays memory block in hex (and possibly ASCII).
-How to use: ESI=start, ECX=length, EBX=type (1=byte, 2=word, 4=dword).
-Registers: Input ESI, ECX, EBX.
+**Plain English description:** Displays memory block in hex (and possibly ASCII).
+**How to use:** ESI=start, ECX=length, EBX=type (1=byte, 2=word, 4=dword).
+**Registers:** Input ESI, ECX, EBX.
 ```asm
 .data
 arr BYTE 11h,22h,33h,44h,55h,66h
@@ -273,11 +321,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Hexadecimal dump showing memory contents: 11 22 33 44 55 66
+
+---
 
 ## 18. GetDateTime
-Gets current system date/time (via Windows API through Irvine library). Store into SYSTEMTIME structure (if using direct API with INVOKE).
-How to use: Define SYSTEMTIME struct; call `GetLocalTime` (or provided wrapper if available). Then read fields.
-Registers: (Wrapper itself: no specific register returns; data stored in struct).
+**Plain English description:** Gets current system date/time (via Windows API through Irvine library). Store into SYSTEMTIME structure (if using direct API with INVOKE).
+**How to use:** Define SYSTEMTIME struct; call `GetLocalTime` (or provided wrapper if available). Then read fields.
+**Registers:** (Wrapper itself: no specific register returns; data stored in struct).
 ```asm
 .data
 systime SYSTEMTIME <>
@@ -289,11 +340,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** No console output, SYSTEMTIME structure filled with current date/time values
+
+---
 
 ## 19. GetMaxXY
-Returns console buffer size.
-How to use: Call; then read DX (columns), AX (rows).
-Registers: Output DX=columns, AX=rows.
+**Plain English description:** Returns console buffer size.
+**How to use:** Call; then read DX (columns), AX (rows).
+**Registers:** Output DX=columns, AX=rows.
 ```asm
 .data
 cols WORD ?
@@ -307,11 +361,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** No visible output, DX and AX contain console dimensions
+
+---
 
 ## 20. GetTextColor
-Returns current text color attributes.
-How to use: Call; AL foreground (0–15), AH background (0–7).
-Registers: Output AL=FG, AH=BG.
+**Plain English description:** Returns current text color attributes.
+**How to use:** Call; AL foreground (0–15), AH background (0–7).
+**Registers:** Output AL=FG, AH=BG.
 ```asm
 .data
 fg BYTE ?
@@ -325,11 +382,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** No visible output, AL and AH contain current color attributes
+
+---
 
 ## 21. Gotoxy
-Moves cursor to (row, col).
-How to use: DH=row (Y), DL=col (X), call.
-Registers: Input DH=row, DL=col.
+**Plain English description:** Moves cursor to (row, col).
+**How to use:** DH=row (Y), DL=col (X), call.
+**Registers:** Input DH=row, DL=col.
 ```asm
 .data
 msg BYTE "At (10,5)",0
@@ -344,11 +404,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** "At (10,5)" appears at column 10, row 5 of console
+
+---
 
 ## 22. MsgBox
-Displays message box with title (OK button).
-How to use: EDX=message string, EBX=title string, call.
-Registers: Input EDX=message, EBX=title.
+**Plain English description:** Displays message box with title (OK button).
+**How to use:** EDX=message string, EBX=title string, call.
+**Registers:** Input EDX=message, EBX=title.
 ```asm
 .data
 mtext  BYTE "Hello from MASM!",0
@@ -362,11 +425,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** Windows message box with title "Info" and message "Hello from MASM!"
+
+---
 
 ## 23. MsgBoxAsk
-Yes/No message box, returns selection.
-How to use: Set EDX, EBX; call; check EAX (6=Yes, 7=No).
-Registers: Input EDX=question, EBX=title. Output EAX=6/7.
+**Plain English description:** Yes/No message box, returns selection.
+**How to use:** Set EDX, EBX; call; check EAX (6=Yes, 7=No).
+**Registers:** Input EDX=question, EBX=title. Output EAX=6/7.
 ```asm
 .data
 qtext  BYTE "Continue operation?",0
@@ -387,11 +453,14 @@ done:
     ret
 main ENDP
 ```
+**Expected output:** Yes/No message box with user's choice returned in EAX
+
+---
 
 ## 24. SetTextColor
-Sets console text colors.
-How to use: EAX = FG + (BG * 16). Call before output.
-Registers: Input EAX = attribute byte.
+**Plain English description:** Sets console text colors.
+**How to use:** EAX = FG + (BG * 16). Call before output.
+**Registers:** Input EAX = attribute byte.
 ```asm
 .data
 msg BYTE "Yellow on Blue",0
@@ -405,11 +474,14 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** "Yellow on Blue" displayed in yellow text on blue background
+
+---
 
 ## 25. WaitMsg
-Displays "Press Enter to continue..." (or similar) and waits for Enter.
-How to use: Call at pause points.
-Registers: None.
+**Plain English description:** Displays "Press Enter to continue..." (or similar) and waits for Enter.
+**How to use:** Call at pause points.
+**Registers:** None.
 ```asm
 .data
 
@@ -419,6 +491,7 @@ main PROC
     ret
 main ENDP
 ```
+**Expected output:** "Press [Enter] to continue..." message displayed, program waits for Enter key
 
 ---
 
