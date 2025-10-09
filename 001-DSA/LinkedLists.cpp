@@ -126,23 +126,26 @@ public:
     currY->next = temp;
   }
 
-  void reverseLL(int length) {
-    Node *currentH = head;
-    Node *currentT = head;
-    int temp;
-    for (int i = 0; i < length / 2; i++) {
-      currentT = head;
-      for (int j = 0; j < length - i - 1; j++) {
-        currentT = currentT->next;
-      }
-
-      temp = currentT->data;
-      currentT->data = currentH->data;
-      currentH->data = temp;
-
-      currentH = currentH->next;
+  void reverse() {
+        Node *prev = nullptr;
+        Node *current = head;
+        Node *next = nullptr;
+        
+        while (current != nullptr) {
+            // Store next node
+            next = current->next;
+            
+            // Reverse the link
+            current->next = prev;
+            
+            // Move pointers one position ahead
+            prev = current;
+            current = next;
+        }
+        
+        // Update head to point to new first node
+        head = prev;
     }
-  }
 
   void removeDoubles() {
     Node *outer = head;
