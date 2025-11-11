@@ -87,6 +87,21 @@ Node* findMin(Node* root) {
     return root;
 }
 
+int sumK(Node* root, int& k) {
+    if(!root) return 0;
+
+    int sum = 0;
+
+    sum += sumK(root->left, k);
+    if(k>0) {
+        sum += root->data;
+        k--;
+    }
+    sum += sumK(root->right, k); 
+    return sum;
+}
+
+
 // ===============================
 // Delete Node in BST
 // ===============================
@@ -156,6 +171,7 @@ bool isFullBinaryTree(Node* root) {
     // One child only
     return false;
 }
+ 
 
 // ===============================
 // Check Complete Binary Tree
@@ -165,12 +181,12 @@ bool isCompleteBinaryTree(Node* root) {
 
     queue<Node*> q;
     q.push(root);
+    
     bool nullFound = false;
 
     while (!q.empty()) {
         Node* curr = q.front();
         q.pop();
-
         if (curr == NULL) {
             nullFound = true;
         } else {
@@ -182,6 +198,18 @@ bool isCompleteBinaryTree(Node* root) {
     return true;
 }
 
+Node* balancedBST(int arr[], int low, int high) {
+    if(low>high) return nullptr;
+    int mid = low + (high - low) / 2;
+   
+    Node* root = new Node(arr[mid]);
+
+    root->left = balancedBST(arr, low, mid-1);
+    root->right = balancedBST(arr, mid+1, high);
+
+    return root;
+
+}
 // ===============================
 // MAIN FUNCTION
 // ===============================
@@ -189,45 +217,49 @@ int main() {
     Node* root = NULL;
 
     // Insert elements in BST
-    int values[] = {50, 30, 70, 20, 40, 60, 80};
-    for (int i = 0; i < 7; i++) {
-        root = insertBST(root, values[i]);
-    }
-
+    int values[] = {1,2,3,7};
+    root = balancedBST(values, 0, 3);
+    // for (int i = 0; i < 7; i++) {
+    //     root = insertBST(root, values[i]);
+    // }
+    // root->data = 10;
+    // root->left->data = 20;
     cout << "Inorder Traversal (sorted): ";
     inorder(root);
-    cout << endl;
+    cout << height(root) << endl;
+    // cout << endl;
+    // int k = 3;
+    // cout << sumK(root, k);
+    // cout << "Preorder Traversal: ";
+    // preorder(root);
+    // cout << endl;
 
-    cout << "Preorder Traversal: ";
-    preorder(root);
-    cout << endl;
+    // cout << "Postorder Traversal: ";
+    // postorder(root);
+    // cout << endl;
 
-    cout << "Postorder Traversal: ";
-    postorder(root);
-    cout << endl;
+    // cout << "Level Order Traversal: ";
+    // levelOrder(root);
+    // cout << endl;
 
-    cout << "Level Order Traversal: ";
-    levelOrder(root);
-    cout << endl;
+    // // Search
+    // int key = 60;
+    // cout << "Search " << key << ": ";
+    // cout << (searchBST(root, key) ? "Found" : "Not Found") << endl;
 
-    // Search
-    int key = 60;
-    cout << "Search " << key << ": ";
-    cout << (searchBST(root, key) ? "Found" : "Not Found") << endl;
+    // // Delete Node
+    // root = deleteBST(root, 20);
+    // cout << "After deleting 20 (Inorder): ";
+    // inorder(root);
+    // cout << endl;
 
-    // Delete Node
-    root = deleteBST(root, 20);
-    cout << "After deleting 20 (Inorder): ";
-    inorder(root);
-    cout << endl;
+    // // Height & Count
+    // cout << "Height of Tree: " << height(root) << endl;
+    // cout << "Total Nodes: " << countNodes(root) << endl;
 
-    // Height & Count
-    cout << "Height of Tree: " << height(root) << endl;
-    cout << "Total Nodes: " << countNodes(root) << endl;
-
-    // Check Full and Complete
-    cout << "Is Full Binary Tree? " << (isFullBinaryTree(root) ? "Yes" : "No") << endl;
-    cout << "Is Complete Binary Tree? " << (isCompleteBinaryTree(root) ? "Yes" : "No") << endl;
+    // // Check Full and Complete
+    // cout << "Is Full Binary Tree? " << (isFullBinaryTree(root) ? "Yes" : "No") << endl;
+    // cout << "Is Complete Binary Tree? " << (isCompleteBinaryTree(root) ? "Yes" : "No") << endl;
 
     return 0;
 }
