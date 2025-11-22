@@ -164,3 +164,55 @@ MySub PROC
     ret
 MySub ENDP
 ```
+
+### ArrayFill Procedure Example
+
+**Purpose:**
+The `ArrayFill` procedure fills an array with a pseudorandom sequence of 16-bit integers.
+
+**Arguments:**
+
+1.  **Pointer to Array:** Passed by reference (offset).
+2.  **Array Length:** Passed by value.
+
+#### 1\. Sample Call
+
+In this example, we define an array of 100 words and pass the arguments to the procedure.
+
+```assembly
+.data
+count = 100
+array WORD count DUP(?)
+
+.code
+; Argument 1: Array Offset (Passed by Reference)
+push OFFSET array
+
+; Argument 2: Array Length (Passed by Value)
+push count
+
+call ArrayFill
+```
+
+#### 2\. Procedure Prologue
+
+Inside `ArrayFill`, the standard prologue initializes the stack frame pointer (`EBP`).
+
+```assembly
+ArrayFill PROC
+    push ebp        ; Save caller's base pointer
+    mov  ebp, esp   ; Initialize new base pointer
+    
+    ; ... Body of procedure ...
+```
+
+#### 3\. Resulting Stack Frame Layout
+
+After the prologue executes, the stack frame is structured as follows (accessed relative to `EBP`):
+
+| Offset | Content | Description |
+| :--- | :--- | :--- |
+| `[ebp + 12]` | **Array Offset** | First pushed argument |
+| `[ebp + 8]` | **Count** | Second pushed argument |
+| `[ebp + 4]` | **Return Address** | Pushed by `CALL` |
+| `[ebp]` | **Saved EBP** | Pushed by `PUSH EBP` |
