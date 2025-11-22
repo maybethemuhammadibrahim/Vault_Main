@@ -1,7 +1,3 @@
-Here are your refined and organized MASM notes. I have structured them logically to follow the lifecycle of a procedure: from setup (Prologue), to execution (Parameters/Locals), to cleanup (Epilogue/Conventions).
-
------
-
 ### 1\. The Stack Frame (Activation Record)
 
 A stack frame is a dedicated area of the stack used by a single procedure call. It stores passed arguments, the return address, saved registers, and local variables.
@@ -168,7 +164,3 @@ MySub PROC
     ret
 MySub ENDP
 ```
-
-### Next Step
-
-Would you like to see a complete code example combining **arrays (pass by reference)** with a loop to process elements, which is a very common exam-style question?
