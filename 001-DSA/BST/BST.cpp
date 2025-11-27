@@ -210,56 +210,77 @@ Node* balancedBST(int arr[], int low, int high) {
     return root;
 
 }
+
+void printTree(Node* root, int space = 0, int indent = 6) {
+    if (root == nullptr) return;
+
+    // Increase distance between levels
+    space += indent;
+
+    // Print right child first
+    printTree(root->right, space, indent);
+
+    // Print current node
+    cout << endl;
+    for (int i = indent; i < space; i++) cout << " ";
+    cout << root->data << "\n";
+
+    // Print left child
+    printTree(root->left, space, indent);
+}
+
+void deleteTree(Node* root) {
+    if (root == nullptr)
+        return;
+
+    deleteTree(root->left);
+    deleteTree(root->right);
+    delete root;
+}
+
+
+void deleteOutOfRange(Node* root, int L, int R) {
+    if(!root) return;
+
+    if(root->left && root->left->data < L) {
+        deleteTree(root->left);
+        root->left = nullptr;
+    } else {
+        deleteOutOfRange(root->left, L, R);
+    }
+    if(root->right && root->right->data > R) {
+        deleteTree(root->right);
+        root->right = nullptr;
+    } else {
+        deleteOutOfRange(root->right, L, R);
+    }
+    
+}
+
+
 // ===============================
 // MAIN FUNCTION
 // ===============================
 int main() {
     Node* root = NULL;
 
-    // Insert elements in BST
-    int values[] = {1,2,3,7};
-    root = balancedBST(values, 0, 3);
-    // for (int i = 0; i < 7; i++) {
-    //     root = insertBST(root, values[i]);
-    // }
-    // root->data = 10;
-    // root->left->data = 20;
-    cout << "Inorder Traversal (sorted): ";
-    inorder(root);
-    cout << height(root) << endl;
-    // cout << endl;
-    // int k = 3;
-    // cout << sumK(root, k);
-    // cout << "Preorder Traversal: ";
-    // preorder(root);
+    // Use a sorted array for balanced BST
+    int values[] = {22,20,14,12,10,8,4};
+    root = insertBST(root, 10);
+    root = insertBST(root, 5);
+    root = insertBST(root, 20);
+    root = insertBST(root, 15);
+    root = insertBST(root, 25);
+    // root = balancedBST(values, 0, 6);
+    // printTree(root);
     // cout << endl;
 
-    // cout << "Postorder Traversal: ";
-    // postorder(root);
-    // cout << endl;
+    deleteOutOfRange(root, 6, 24);
 
-    // cout << "Level Order Traversal: ";
-    // levelOrder(root);
-    // cout << endl;
+    printTree(root);
+    cout << endl;
 
-    // // Search
-    // int key = 60;
-    // cout << "Search " << key << ": ";
-    // cout << (searchBST(root, key) ? "Found" : "Not Found") << endl;
-
-    // // Delete Node
-    // root = deleteBST(root, 20);
-    // cout << "After deleting 20 (Inorder): ";
-    // inorder(root);
-    // cout << endl;
-
-    // // Height & Count
-    // cout << "Height of Tree: " << height(root) << endl;
-    // cout << "Total Nodes: " << countNodes(root) << endl;
-
-    // // Check Full and Complete
-    // cout << "Is Full Binary Tree? " << (isFullBinaryTree(root) ? "Yes" : "No") << endl;
-    // cout << "Is Complete Binary Tree? " << (isCompleteBinaryTree(root) ? "Yes" : "No") << endl;
+    // cout << "Height: " << height(root) << endl;
 
     return 0;
 }
