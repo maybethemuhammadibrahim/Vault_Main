@@ -62,46 +62,64 @@ private:
     }
 
     Node* LRRotation(Node* p) {
-        Node* pl  = p->lchild;
-        Node* plr = pl->rchild;
-
-        // Step 1: rotate left on left child
-        pl->rchild = plr->lchild;
-        plr->lchild = pl;
-
-        // Step 2: rotate right on p
-        p->lchild  = plr->rchild;
-        plr->rchild = p;
-
-        // Update heights
-        pl->height  = nodeHeight(pl);
-        p->height   = nodeHeight(p);
-        plr->height = nodeHeight(plr);
-
-        if (p == root) root = plr;
-        return plr;
+        // First rotate the left child (RR)
+        p->lchild = RRRotation(p->lchild);
+    
+        // Now rotate the parent (LL)
+        return LLRotation(p);
     }
 
-    Node* RLRotation(Node* p) {
-        Node* pr  = p->rchild;
-        Node* prl = pr->lchild;
 
-        // Step 1: rotate right on right child
-        pr->lchild = prl->rchild;
-        prl->rchild = pr;
+    // Node* LRRotation(Node* p) {
+    //     Node* pl  = p->lchild;
+    //     Node* plr = pl->rchild;
 
-        // Step 2: rotate left on p
-        p->rchild  = prl->lchild;
-        prl->lchild = p;
+    //     // Step 1: rotate left on left child
+    //     pl->rchild = plr->lchild;
+    //     plr->lchild = pl;
 
-        // Update heights
-        pr->height  = nodeHeight(pr);
-        p->height   = nodeHeight(p);
-        prl->height = nodeHeight(prl);
+    //     // Step 2: rotate right on p
+    //     p->lchild  = plr->rchild;
+    //     plr->rchild = p;
 
-        if (p == root) root = prl;
-        return prl;
-    }
+    //     // Update heights
+    //     pl->height  = nodeHeight(pl);
+    //     p->height   = nodeHeight(p);
+    //     plr->height = nodeHeight(plr);
+
+    //     if (p == root) root = plr;
+    //     return plr;
+    // }
+
+    Node* AVL::RLRotation(Node* p) {
+        // First rotate the right child (LL)
+        p->rchild = LLRotation(p->rchild);
+    
+        // Now rotate the parent (RR)
+        return RRRotation(p);
+    }        
+
+
+    // Node* RLRotation(Node* p) {
+    //     Node* pr  = p->rchild;
+    //     Node* prl = pr->lchild;
+
+    //     // Step 1: rotate right on right child
+    //     pr->lchild = prl->rchild;
+    //     prl->rchild = pr;
+
+    //     // Step 2: rotate left on p
+    //     p->rchild  = prl->lchild;
+    //     prl->lchild = p;
+
+    //     // Update heights
+    //     pr->height  = nodeHeight(pr);
+    //     p->height   = nodeHeight(p);
+    //     prl->height = nodeHeight(prl);
+
+    //     if (p == root) root = prl;
+    //     return prl;
+    // }
 
     Node* rInsert(Node* p, int key) {
         if (p == nullptr) {
