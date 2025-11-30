@@ -1,92 +1,125 @@
-
 ### **I. Core Terminology**
-* [cite_start]**Cryptography:** The science of encoding and decoding messages[cite: 9].
-* **Key Terms:**
-    * [cite_start]**Cipher:** The specific method or algorithm used for encoding[cite: 10].
-    * [cite_start]**Plaintext:** The original, readable message[cite: 11].
-    * [cite_start]**Ciphertext:** The encoded, unreadable message[cite: 12].
-    * [cite_start]**Encryption:** The process of converting plaintext to ciphertext[cite: 13].
-    * [cite_start]**Decryption:** The process of converting ciphertext back to plaintext[cite: 14].
+
+**Cryptography** is the study of how to safely convert readable information into an unreadable form and then recover it again.
+Key terms you need to keep straight:
+
+* **Cipher:** The specific algorithm or rule used to perform the encoding.
+* **Plaintext:** The original readable message.
+* **Ciphertext:** The transformed, unreadable message.
+* **Encryption:** Turning plaintext into ciphertext.
+* **Decryption:** Turning ciphertext back into plaintext.
 
 ---
 
 ### **II. Classical Cryptography**
-#### **1. Caesar Cipher**
-A substitution method created by Julius Caesar.
-* [cite_start]**Mechanism:** Shifts every letter forward by 3 positions in the alphabet (wrapping XYZ to ABC)[cite: 16, 22].
-* **Mathematical Process:**
-    * [cite_start]Map letters to integers $0$ to $25$ (A=0, B=1... Z=25)[cite: 24].
-    * [cite_start]**Encryption Function:** $f(p) = (p + 3) \mod 26$[cite: 25].
-    * [cite_start]**Decryption Function:** $f^{-1}(p) = (p - 3) \mod 26$[cite: 32].
 
-#### **2. Shift Cipher (Generalization)**
-The Caesar cipher is a specific type of **Shift Cipher** where the key is 3.
-* [cite_start]**Key ($k$):** An integer used to determine the shift amount[cite: 38].
-* [cite_start]**Encryption:** $f(p) = (p + k) \mod 26$[cite: 36].
-* [cite_start]**Decryption:** $f^{-1}(p) = (p - k) \mod 26$[cite: 37].
-* [cite_start]**Example:** With $k=11$, "STOP" becomes "DEZA"[cite: 40, 45].
+#### **1. Caesar Cipher**
+
+A simple substitution technique attributed to Julius Caesar.
+Its mechanism is straightforward: every letter in the message is shifted 3 positions forward in the alphabet, looping around when needed (X→A, Y→B, Z→C).
+
+The math behind it:
+
+* Assign letters numerical values from 0 to 25.
+* Encryption:           **f(p) = (p + 3) mod 26**
+* Decryption:           **f⁻¹(p) = (p − 3) mod 26**
+
+#### **2. Shift Cipher (General Case)**
+
+The Caesar cipher is just a shift cipher with a key of 3.
+A shift cipher uses any integer key **k** to determine how far each letter moves.
+
+* Encryption:       **f(p) = (p + k) mod 26**
+* Decryption:       **f⁻¹(p) = (p − k) mod 26**
+
+Example: With **k = 11**, the word “STOP” becomes “DEZA.”
 
 ---
 
 ### **III. Cryptosystems & Communication Models**
+
 #### **1. Communication Flow**
-* [cite_start]**Participants:** Alice (sender), Bob (receiver), and Eve (eavesdropper/interceptor)[cite: 53, 58, 59].
-* [cite_start]**Goal:** Secure communication so Eve cannot read the content[cite: 76].
+
+Cryptography is often explained using three characters:
+
+* **Alice** (sender)
+* **Bob** (receiver)
+* **Eve** (the eavesdropper)
+
+The goal is simple: Alice wants to send Bob a message that Eve cannot make sense of.
 
 #### **2. Types of Cryptosystems**
-* **Symmetric Cryptosystems:**
-    * [cite_start]Alice and Bob share a **single secret key ($K$)**[cite: 77].
-    * [cite_start]The same key is used to encrypt and decrypt ($encrypt(m, K)$ and $decrypt(c, K)$)[cite: 78, 79].
-    * [cite_start]*Example:* AES[cite: 80].
-* **Public Key Cryptosystems (Asymmetric):**
-    * [cite_start]No shared secret is required beforehand[cite: 81].
-    * Uses a **Key Pair**:
-        1.  [cite_start]**Public Key:** Known to everyone; used to **encrypt** messages[cite: 83, 84].
-        2.  [cite_start]**Private Key:** Known only to the recipient (Bob); used to **decrypt** messages[cite: 83, 85].
-    * [cite_start]**Security:** Even if Eve knows the public key, she cannot decrypt the message without the private key[cite: 72].
+
+**Symmetric Cryptosystems**
+Alice and Bob share one secret key **K**. The same key is used for both encryption and decryption. AES is a well-known example.
+
+**Public-Key (Asymmetric) Cryptosystems**
+No shared secret is required beforehand. Instead, each participant has:
+
+* a **public key** (used by anyone to encrypt), and
+* a **private key** (used only by the owner to decrypt).
+
+Knowing the public key doesn’t help Eve decrypt anything. The private key does all the heavy lifting.
 
 ---
 
 ### **IV. The RSA Cryptosystem**
-A widely used public-key algorithm based on number theory.
 
-#### **1. Key Generation Process**
-1.  [cite_start]**Choose Primes:** Select two distinct random prime numbers, $p$ and $q$[cite: 88].
-2.  [cite_start]**Compute Modulus:** Calculate $n = p \times q$[cite: 90].
-3.  [cite_start]**Compute Totient:** Calculate $k = (p-1)(q-1)$[cite: 90].
-4.  [cite_start]**Select Public Exponent ($e$):** Choose $e$ such that $1 < e < k$ and $gcd(e, k) = 1$ (they are coprime)[cite: 91].
-    * [cite_start]**Public Key:** $(n, e)$[cite: 95].
-5.  **Compute Private Exponent ($d$):** Calculate $d$ as the multiplicative inverse of $e$ modulo $k$.
-    * [cite_start]Formula: $d \times e \equiv 1 \mod k$[cite: 93, 94].
-    * [cite_start]**Private Key:** $(n, d)$[cite: 95].
+RSA is the classic example of a public-key cryptosystem, built on the difficulty of factoring large numbers.
+
+#### **1. Key Generation**
+
+1. Choose two large prime numbers **p** and **q**.
+2. Compute the modulus:  **n = p × q**
+3. Compute Euler’s totient: **k = (p − 1)(q − 1)**
+4. Pick a public exponent **e**, where **1 < e < k** and **gcd(e, k) = 1**.
+   The public key is **(n, e)**.
+5. Compute **d**, the modular inverse of **e** modulo **k**, so that
+       **d × e ≡ 1 (mod k)**
+   The private key is **(n, d)**.
 
 #### **2. Operations**
-* **Encryption (by Sender):**
-    * [cite_start]Convert message $M$ to integer $m$ where $0 \le m < n$[cite: 100].
-    * [cite_start]Compute ciphertext $c$: $$c \equiv m^e \mod n$$[cite: 102].
-* **Decryption (by Receiver):**
-    * [cite_start]Recover message $m$: $$m \equiv c^d \mod n$$[cite: 104].
-* **Digital Signatures:**
-    * [cite_start]To sign, the sender computes $s = m^d \mod n$[cite: 113].
-    * [cite_start]To verify, the receiver computes $m = s^e \mod n$[cite: 114].
 
-#### **3. Example Calculation**
-* **Given:** $p=7, q=17 \rightarrow n=119$.
-* [cite_start]**Totient:** $k = (6)(16) = 96$[cite: 119].
-* **Keys:** Select $e=5$. [cite_start]Compute $d=77$ (since $5 \times 77 \pmod{96} = 1$)[cite: 121].
-* **Action:** Encrypt message $19$.
-    * [cite_start]$19^5 \mod 119 = 66$ (Ciphertext)[cite: 125].
-    * [cite_start]$66^{77} \mod 119 = 19$ (Decrypted)[cite: 126].
+**Encryption:**
+Convert the message **M** into an integer **m**, then compute
+    **c ≡ mᵉ mod n**
+
+**Decryption:**
+Recover the message using
+    **m ≡ cᵈ mod n**
+
+**Digital Signatures:**
+Signing uses the private key:  **s = mᵈ mod n**
+Verification uses the public key: **m = sᵉ mod n**
+
+#### **3. Example**
+
+Let **p = 7** and **q = 17**, giving **n = 119**.
+Totient: **k = 96**.
+Pick **e = 5**. Compute **d = 77**, since **5 × 77 ≡ 1 (mod 96)**.
+
+Encrypting the message 19:
+ Ciphertext = **19⁵ mod 119 = 66**
+Decrypting:      **66⁷⁷ mod 119 = 19**
 
 ---
 
 ### **V. Mathematical Foundation**
-#### **Fermat's Little Theorem**
-Used to compute remainders of large powers efficiently, which is critical for RSA.
-* **Theorem:** If $p$ is a prime and $a$ is an integer not divisible by $p$:
-    [cite_start]$$a^{p-1} \equiv 1 \pmod p$$[cite: 155].
-* [cite_start]**Alternative Form:** For any integer $a$: $a^p \equiv a \pmod p$[cite: 156].
-* **Application Example:** Find $7^{222} \mod 11$.
-    * We know $7^{10} \equiv 1 \pmod{11}$.
-    * Break down power: $222 = (22 \times 10) + 2$.
-    * [cite_start]Result: $7^2 = 49 \equiv 5 \pmod{11}$ [cite: 159-163].
+
+#### **Fermat’s Little Theorem**
+
+A key tool for handling giant exponents in RSA.
+
+If **p** is prime and **a** is not divisible by **p**, then
+    **a^(p−1) ≡ 1 (mod p)**
+
+Equivalent form:
+    **aᵖ ≡ a (mod p)**
+
+Example: Compute **7²²² mod 11**.
+Since **7¹⁰ ≡ 1 (mod 11)**, rewrite 222 as **22×10 + 2**.
+Thus the remainder is simply **7² = 49 ≡ 5 (mod 11)**.
+
+---
+
+If you want, I can help turn this into an exam-friendly cheat sheet, a lecture summary, or a printable one-page reference.
