@@ -326,6 +326,27 @@ RawProc LABEL NEAR
           * **Read Error:** The Proc reads 4 bytes, consuming your `WORD` + 2 bytes of the *next* item on the stack (garbage or next param).
           * **Return Error:** The Proc executes `RET 4`. The stack only had 2 bytes pushed. `ESP` returns 2 bytes higher than it started. The stack is now broken, and the Caller will crash.
 
+11. **Why ENTER Should Never Be Mixed With PROC**
+
+Both build stack frames.
+If you write:
+
+MyProc PROC arg1:DWORD
+    ENTER 4,0       ; disaster
+
+
+You get:
+MASM-generated push ebp
+ENTER-generated push ebp
+Parameter offsets shifted by 4 bytes
+→ arguments now read as garbage
+
+Using ENTER inside a PROC = double prologue = corrupted stack.
+
+Use PROC + LOCAL.
+Ignore ENTER.
+
+
 #### Summary Comparison Table
 
 | Feature | Raw Assembly | High-Level MASM |
