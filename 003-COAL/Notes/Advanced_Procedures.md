@@ -221,7 +221,7 @@ After the prologue executes, the stack frame is structured as follows (accessed 
 
 To understand the keywords, we must first see what they replace. This "Raw" procedure demonstrates the manual management of the stack, parameters, and local variables.
 
-```masm
+```assembly
 ; RAW IMPLEMENTATION (How the CPU actually executes it)
 ; Goal: A procedure that takes 2 params, saves EBX, and has 1 local variable.
 
