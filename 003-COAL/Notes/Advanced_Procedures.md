@@ -216,143 +216,646 @@ After the prologue executes, the stack frame is structured as follows (accessed 
 | `[ebp + 8]` | **Count** | Second pushed argument |
 | `[ebp + 4]` | **Return Address** | Pushed by `CALL` |
 | `[ebp]` | **Saved EBP** | Pushed by `PUSH EBP` |
+# Advanced MASM: Stack Frames, Procedures & Local Variables
 
-### I. The Anchor: Raw Assembly vs. High-Level Syntax
+## I. Foundation: The Raw Stack Frame
 
-To understand the keywords, we must first see what they replace. This "Raw" procedure demonstrates the manual management of the stack, parameters, and local variables.
+Before using MASM's high-level directives, you must understand what the CPU actually executes. Every abstraction ultimately compiles down to these fundamental operations.
 
-```assembly
-; RAW IMPLEMENTATION (How the CPU actually executes it)
-; Goal: A procedure that takes 2 params, saves EBX, and has 1 local variable.
+### The Standard Stack Frame Structure
 
-RawProc LABEL NEAR
-    ; 1. Prologue (Building the Stack Frame)
+A procedure needs to:
+1. Accept parameters from the caller
+2. Preserve registers that must survive the call
+3. Allocate space for local variables
+4. Clean up before returning
+
+```asm
+; RAW IMPLEMENTATION (No PROC directive)
+RawProc:
+    ; === PROLOGUE ===
     push ebp                ; Save caller's base pointer
-    mov  ebp, esp           ; Set our frame reference
-    sub  esp, 4             ; Reserve 4 bytes for a local variable!
-                            ; (CRITICAL: Guard against interrupts/pushes)
+    mov  ebp, esp           ; Set our base pointer to current stack top
+    sub  esp, 8             ; Allocate 8 bytes for locals
+                            ; Creates: [ebp-4] and [ebp-8]
 
-    ; 2. Preservation
-    push ebx                ; Save EBX (Callee-saved register)
+    ; === REGISTER PRESERVATION ===
+    push ebx                ; Save callee-saved registers
+    push esi                ; (EBX, ESI, EDI must be preserved)
+    push edi
 
-    ; 3. The Logic
-    ; Stack view:
-    ; [ebp+12] = Param2
-    ; [ebp+8]  = Param1
-    ; [ebp+4]  = Return Address
-    ; [ebp]    = Old EBP
+    ; === FUNCTION LOGIC ===
+    ; At this point, the stack looks like:
+    ; [ebp+12] = Param2 (second parameter)
+    ; [ebp+8]  = Param1 (first parameter)
+    ; [ebp+4]  = Return address (pushed by CALL)
+    ; [ebp]    = Old EBP (saved base pointer)
     ; [ebp-4]  = LocalVar1
-    ; [ebp-8]  = Saved EBX
+    ; [ebp-8]  = LocalVar2
+    ; [esp]    = Top of stack (after pushing EDI)
 
-    mov eax, [ebp+8]        ; Get Param1
-    add eax, [ebp+12]       ; Add Param2
-    mov [ebp-4], eax        ; Store sum in LocalVar1
+    mov eax, [ebp+8]        ; Read first parameter
+    add eax, [ebp+12]       ; Add second parameter
+    mov [ebp-4], eax        ; Store result in local variable
 
-    ; 4. Epilogue (Cleanup)
-    pop ebx                 ; Restore EBX first (LIFO order)
-    mov esp, ebp            ; Snap ESP back to EBP (Discards locals)
-    pop ebp                 ; Restore caller's EBP
-    ret 8                   ; Return and pop 8 bytes of params (StdCall)
+    ; === EPILOGUE ===
+    pop edi                 ; Restore registers in REVERSE order
+    pop esi
+    pop ebx
+    
+    mov esp, ebp            ; Deallocate locals (reset stack pointer)
+    pop ebp                 ; Restore caller's base pointer
+    ret 8                   ; Return and pop 8 bytes of parameters
+                            ; (STDCALL convention: callee cleans stack)
 ```
 
------
+### Why EBP? The Base Pointer's Purpose
 
-### II. The Keywords Explained
+- **ESP changes constantly** (every push/pop moves it)
+- **EBP stays fixed** during the function, providing stable reference points
+- Parameters are at **positive offsets** from EBP: `[ebp+8]`, `[ebp+12]`
+- Locals are at **negative offsets** from EBP: `[ebp-4]`, `[ebp-8]`
 
-#### 1\. PROC & PARAMETERS
+---
 
-  * **Purpose:** Automates the "Prologue" and parameter offsets.
-  * **Syntax:** `Name PROC [USES regList], param1:Type, param2:Type`
-  * **Mechanism:**
-      * Generates `push ebp` / `mov ebp, esp` automatically.
-      * Creates symbol names for `[ebp+8]`, etc., so you can use `param1` instead of offsets.
-      * **USES:** Automatically generates `push` at the start and `pop` at the end for listed registers.
-      * **RET:** It silently converts `ret` to `ret N` based on the total size of declared parameters.
+## II. High-Level Directives Explained
 
-#### 2\. LOCAL
+### 1. PROTO - The Function Signature
 
-  * **Purpose:** Replaces manual `sub esp, N`. Declares local variables within `PROC`.
-  * **Syntax:** `LOCAL varName:Type`
-  * **Mechanism:**
-      * MASM calculates the total size of all `LOCAL` variables.
-      * It inserts `sub esp, TotalSize` immediately after the prologue.
-      * It creates a negative offset symbol (e.g., `varName` = `[ebp-4]`).
-  * **Why use it?** It prevents the bug where you forget to reserve `ESP` space (the "Hardware Interrupt" risk).
+`PROTO` declares a function's interface **before** it's implemented. Think of it as a forward declaration in C.
 
-#### 3\. INVOKE & ADDR
+```asm
+; Syntax: FunctionName PROTO [calling_convention] param1:type, param2:type, ...
+AddTwo PROTO :DWORD, :DWORD
+GetString PROTO :DWORD
+```
 
-  * **Purpose:** A high-level wrapper for `PUSH` and `CALL`.
-  * **Syntax:** `INVOKE ProcName, arg1, arg2`
-  * **Mechanism:**
-      * Checks parameter types against the `PROTO` or `PROC` definition.
-      * Pushes arguments in Reverse Order (stdcall requirement).
-      * Calls the procedure.
-  * **The ADDR Operator:**
-      * **Usage:** `INVOKE MyProc, ADDR myVar`
-      * **Function:** Passes the *address* (pointer) of a variable.
-      * **Intelligence:**
-          * If `myVar` is **Global**: It generates `push OFFSET myVar`.
-          * If `myVar` is **Local**: It generates `lea eax, [ebp-X]` followed by `push eax`. (This is why `ADDR` is unique to MASM/INVOKE; it handles the `LEA` logic for you).
+**Critical Points:**
+- **No code is generated** - this is purely for the assembler's benefit
+- Required for `INVOKE` to validate arguments at assembly time
+- Can be placed in include files for cross-module calls
+- The colon before the type is mandatory: `:DWORD` not `DWORD`
 
-#### 4\. ENTER
+**Common Error:**
+```asm
+; WRONG - Missing colon
+AddTwo PROTO DWORD, DWORD
 
-  * **Purpose:** A CPU instruction meant to replace the prologue (`push ebp`, `mov ebp, esp`, `sub esp, N`).
-  * **Syntax:** `ENTER numBytes, nestingLevel`
-  * **Usage:** **Rarely used.**
-  * **Why?** It is historically slower (in clock cycles) on modern CPUs than simply writing the `push/mov/sub` instructions manually.
+; CORRECT
+AddTwo PROTO :DWORD, :DWORD
+```
 
-#### 5\. LEAVE
+---
 
-  * **Purpose:** The standard "Epilogue" instruction.
-  * **Syntax:** `LEAVE`
-  * **Mechanism:** Performs exactly two actions:
-    1.  `MOV ESP, EBP` (Instantaneously frees all local variables/stack space).
-    2.  `POP EBP` (Restores the previous stack frame).
-  * **Note:** It does **not** return or clean up arguments; it only cleans up the stack frame.
+### 2. PROC - The Implementation
 
------
+`PROC` automates the prologue and epilogue, translating parameter names into stack offsets.
 
-### III. Critical Concepts & Safety
+```asm
+AddTwo PROC val1:DWORD, val2:DWORD
+    ; MASM automatically inserts:
+    ;   push ebp
+    ;   mov ebp, esp
+    
+    mov eax, val1           ; Assembles to: mov eax, [ebp+8]
+    add eax, val2           ; Assembles to: add eax, [ebp+12]
+    
+    ret                     ; Assembles to: mov esp, ebp
+                            ;                pop ebp
+                            ;                ret 8
+AddTwo ENDP
+```
 
-#### The "Stack Corruption" Rules
+**Parameter Mechanics:**
+- Parameters are **stack offset aliases**, not memory variables
+- First parameter starts at `[ebp+8]` (after return address at `[ebp+4]` and saved EBP at `[ebp]`)
+- Parameters pushed **right-to-left** by convention (last parameter pushed first)
+- The order in memory is **left-to-right** (first param at lower address)
 
-1.  **Manual ESP Subtraction:**
-    If you do not use `LOCAL`, you **must** use `sub esp, N` before using `[ebp-N]`. If you don't, hardware interrupts will overwrite your data because the CPU assumes anything below `ESP` is garbage.
+**Calling Example:**
+```asm
+; This code:
+push 20                     ; Second parameter
+push 10                     ; First parameter
+call AddTwo
 
-2.  **Type Mismatch (The Crash Generator):**
+; Results in stack:
+; [ebp+12] = 20 (val2)
+; [ebp+8]  = 10 (val1)
+```
 
-      * **Scenario:** Proc expects `DWORD` (4 bytes), but you push `WORD` (2 bytes).
-      * **Result:**
-          * **Read Error:** The Proc reads 4 bytes, consuming your `WORD` + 2 bytes of the *next* item on the stack (garbage or next param).
-          * **Return Error:** The Proc executes `RET 4`. The stack only had 2 bytes pushed. `ESP` returns 2 bytes higher than it started. The stack is now broken, and the Caller will crash.
+**Naming Restrictions:**
+- Don't use register names: `PROC eax:DWORD` will cause errors
+- Don't reuse segment register names: `cs`, `ds`, `es`, `fs`, `gs`, `ss`
+- Avoid MASM keywords: `BYTE`, `WORD`, `DWORD`, `OFFSET`, etc.
 
-11. **Why ENTER Should Never Be Mixed With PROC**
+---
 
-Both build stack frames.
-If you write:
+### 3. LOCAL - Stack Variable Allocation
 
-MyProc PROC arg1:DWORD
-    ENTER 4,0       ; disaster
+`LOCAL` replaces manual `sub esp, N` instructions.
 
+```asm
+MyProc PROC
+    LOCAL sum:DWORD         ; [ebp-4]
+    LOCAL count:WORD        ; [ebp-8] due to alignment
+    LOCAL flag:BYTE         ; [ebp-12] due to alignment
+    
+    ; MASM generates: sub esp, 12
+    
+    mov sum, 0              ; INITIALIZE - contains garbage otherwise!
+    mov count, 0
+    mov flag, 0
+    ret
+MyProc ENDP
+```
 
-You get:
-MASM-generated push ebp
-ENTER-generated push ebp
-Parameter offsets shifted by 4 bytes
-→ arguments now read as garbage
+**Critical Nuances:**
 
-Using ENTER inside a PROC = double prologue = corrupted stack.
+**1. Garbage Values:**
+Local variables contain **random data** from previous stack usage. Always initialize before reading.
 
-Use PROC + LOCAL.
-Ignore ENTER.
+```asm
+MyProc PROC
+    LOCAL temp:DWORD
+    
+    ; WRONG - temp contains garbage
+    mov eax, temp           ; EAX now has unpredictable value
+    
+    ; CORRECT
+    mov temp, 0
+    mov eax, temp           ; EAX = 0
+    ret
+MyProc ENDP
+```
 
+**2. Automatic Alignment:**
+MASM aligns locals to DWORD boundaries (4 bytes) for performance, even if you request smaller sizes.
 
-#### Summary Comparison Table
+```asm
+MyProc PROC
+    LOCAL a:BYTE            ; Occupies 4 bytes, not 1
+    LOCAL b:BYTE            ; Occupies 4 bytes, not 1
+    LOCAL c:WORD            ; Occupies 4 bytes, not 2
+    
+    ; MASM generates: sub esp, 12  (not sub esp, 4)
+    ret
+MyProc ENDP
+```
 
-| Feature | Raw Assembly | High-Level MASM |
-| :--- | :--- | :--- |
-| **Start** | `push ebp` / `mov ebp, esp` | `PROC` |
-| **Locals** | `sub esp, 4` / `mov [ebp-4], val` | `LOCAL var:DWORD` |
-| **Calling** | `push val` / `push offset val` | `INVOKE Proc, val, ADDR val` |
-| **Cleanup** | `mov esp, ebp` / `pop ebp` | `LEAVE` (or auto-generated by `ENDP`) |
-| **Return** | `ret 8` (Manual calculation) | `ret` (Auto-calculated by MASM) |
+**3. Declaration Order:**
+Locals are allocated in the order declared, with the first LOCAL at the highest address.
+
+```asm
+LOCAL first:DWORD          ; [ebp-4]
+LOCAL second:DWORD         ; [ebp-8]
+LOCAL third:DWORD          ; [ebp-12]
+```
+
+---
+
+### 4. INVOKE - The High-Level Call
+
+`INVOKE` is a compile-time macro that generates the appropriate `PUSH` and `CALL` sequence.
+
+```asm
+; High-level
+INVOKE AddTwo, 10, 20
+
+; Expands to (approximately):
+push 20                    ; Right-to-left
+push 10
+call AddTwo
+```
+
+**Advantages:**
+- Type checking against PROTO declaration
+- Automatic parameter counting
+- Cleaner, more readable code
+- Works with expressions: `INVOKE AddTwo, eax, [myVar]`
+
+**With ADDR Operator:**
+```asm
+MyProc PROC
+    LOCAL buffer[100]:BYTE
+    
+    INVOKE FillBuffer, ADDR buffer, 100
+    ret
+MyProc ENDP
+```
+
+---
+
+### 5. ADDR vs OFFSET - The Critical Distinction
+
+This is one of the most misunderstood aspects of MASM.
+
+| Aspect | OFFSET | ADDR |
+|--------|--------|------|
+| **Timing** | Link-time constant | Run-time calculation (for locals) |
+| **Usage** | Global/static variables only | Global OR local variables |
+| **Implementation** | Direct memory address | Generates `LEA` for locals |
+| **Effect on EAX** | None | **Clobbers EAX** for locals |
+
+**Examples:**
+
+```asm
+.data
+globalVar DWORD 100
+
+.code
+MyProc PROC
+    LOCAL localVar:DWORD
+    
+    ; Using OFFSET (only for globals)
+    push OFFSET globalVar   ; Direct address, no registers affected
+    
+    ; Using ADDR on global (behaves like OFFSET)
+    push ADDR globalVar     ; Same as OFFSET for globals
+    
+    ; Using ADDR on local (generates LEA)
+    push ADDR localVar      ; MASM generates:
+                            ;   lea eax, [ebp-4]
+                            ;   push eax
+                            ; WARNING: EAX is now destroyed!
+    
+    call SomeFunction
+    ret
+MyProc ENDP
+```
+
+**Common Pitfall:**
+```asm
+MyProc PROC
+    LOCAL temp:DWORD
+    
+    mov eax, 42             ; EAX = 42
+    INVOKE DoSomething, ADDR temp, eax
+    ; BUG: ADDR temp generates LEA into EAX first,
+    ; destroying the value 42 before pushing it!
+    
+    ; SOLUTION: Reorder arguments or save EAX
+    INVOKE DoSomething, eax, ADDR temp  ; Push eax before LEA
+    ret
+MyProc ENDP
+```
+
+---
+
+## III. Calling Conventions In-Depth
+
+The calling convention determines **who cleans the stack** and **parameter order**.
+
+### STDCALL (Windows API Standard)
+
+**Rules:**
+- Parameters pushed **right-to-left**
+- **Callee** cleans the stack
+- Return value in EAX (or EAX:EDX for 64-bit values)
+
+```asm
+.model flat, stdcall       ; Set default convention
+
+AddTwo PROC STDCALL val1:DWORD, val2:DWORD
+    mov eax, val1
+    add eax, val2
+    ret 8                  ; Callee cleans 8 bytes
+AddTwo ENDP
+
+; Caller's code:
+push 20
+push 10
+call AddTwo
+; No cleanup needed - callee did it with RET 8
+```
+
+**Advantages:**
+- Smaller code size (cleanup appears once in function, not at every call site)
+- Consistent cleanup even if function called many times
+
+**Disadvantages:**
+- Cannot support variable arguments (like printf)
+
+---
+
+### CDECL (C Language Default)
+
+**Rules:**
+- Parameters pushed **right-to-left**
+- **Caller** cleans the stack
+- Return value in EAX
+
+```asm
+AddTwo PROC C val1:DWORD, val2:DWORD
+    mov eax, val1
+    add eax, val2
+    ret                    ; Just RET, no parameter count
+AddTwo ENDP
+
+; Caller's code:
+push 20
+push 10
+call AddTwo
+add esp, 8                 ; Caller cleans stack
+```
+
+**Advantages:**
+- Supports variable arguments (caller knows how many args it pushed)
+- Compatible with C standard library
+
+**Disadvantages:**
+- Larger code size (cleanup code at every call site)
+
+---
+
+### Convention Comparison Table
+
+| Aspect | STDCALL | CDECL | FASTCALL |
+|--------|---------|-------|----------|
+| **Cleanup** | Callee | Caller | Callee |
+| **Parameters** | Right-to-left | Right-to-left | First 2 in ECX/EDX, rest on stack |
+| **Varargs Support** | No | Yes | No |
+| **RET Instruction** | `ret N` | `ret` | `ret N` (for stack params) |
+| **Use Case** | Win32 API | C libraries | Performance-critical code |
+
+**Mixing Conventions:**
+You can override the default on a per-function basis:
+```asm
+.model flat, stdcall       ; Default is STDCALL
+
+MyFunc PROC C arg1:DWORD   ; This function uses CDECL
+    ret
+MyFunc ENDP
+```
+
+---
+
+## IV. Register Preservation Rules
+
+Understanding which registers must be preserved is critical to prevent subtle bugs.
+
+### Callee-Saved Registers (Must Preserve)
+
+These registers must have the **same value** after your function returns:
+- **EBX** - Base register
+- **ESI** - Source index
+- **EDI** - Destination index
+- **EBP** - Base pointer (frame pointer)
+
+```asm
+MyProc PROC
+    push ebx               ; Save
+    push esi
+    push edi
+    
+    ; Use EBX, ESI, EDI freely
+    mov ebx, 100
+    mov esi, OFFSET buffer
+    mov edi, OFFSET dest
+    
+    pop edi                ; Restore in REVERSE order
+    pop esi
+    pop ebx
+    ret
+MyProc ENDP
+```
+
+### Caller-Saved Registers (Can Destroy)
+
+These registers can be modified without preservation:
+- **EAX** - Accumulator (also holds return value)
+- **ECX** - Counter
+- **EDX** - Data (also holds high 32 bits of return value for 64-bit results)
+
+```asm
+MyProc PROC
+    ; No need to save EAX, ECX, EDX
+    mov eax, 42
+    mov ecx, 100
+    mov edx, 200
+    ; Return value goes in EAX
+    ret
+MyProc ENDP
+```
+
+**Implication for Callers:**
+If you need EAX/ECX/EDX preserved across a function call, **you** must save them:
+
+```asm
+mov eax, 123               ; Important value in EAX
+push eax                   ; Save it
+call SomeFunction          ; Might destroy EAX
+pop eax                    ; Restore it
+```
+
+---
+
+## V. Advanced Topics & Pitfalls
+
+### 1. The ENTER/LEAVE Instructions
+
+**ENTER** was added to x86 to simplify Pascal-style stack frame creation.
+
+```asm
+; ENTER equivalent
+enter 8, 0                 ; Allocate 8 bytes for locals
+
+; Equivalent to:
+push ebp
+mov ebp, esp
+sub esp, 8
+```
+
+**Why You Should Never Use ENTER:**
+- **10-40x slower** than the three-instruction sequence on modern processors
+- Implemented in complex microcode, not optimized hardware
+- No advantage in code size for simple frames
+- `LEAVE` instruction (its counterpart) is fine to use, as it's fast
+
+**Use This Instead:**
+```asm
+; Fast prologue
+push ebp
+mov ebp, esp
+sub esp, 8
+
+; Fast epilogue
+mov esp, ebp               ; Or use: leave (this one is fast)
+pop ebp
+```
+
+---
+
+### 2. The Double-Prologue Bug
+
+**Never mix PROC directives with manual prologue code.**
+
+```asm
+; WRONG - PROC already generates prologue
+MyProc PROC val1:DWORD
+    push ebp               ; PROC already did this!
+    mov ebp, esp           ; PROC already did this!
+    
+    mov eax, val1          ; DISASTER: val1 translates to [ebp+8]
+                           ; But EBP was moved again, so this reads
+                           ; the WRONG memory location!
+    ret
+MyProc ENDP
+```
+
+**The Fix:** Never manually create prologue/epilogue when using PROC. Let MASM handle it, or write a raw label-based function.
+
+---
+
+### 4. The Mysterious Return Address
+
+Many beginners don't realize that `CALL` pushes the return address onto the stack **before** the function executes.
+
+```asm
+; Caller executes:
+push 20                    ; Parameter at [esp]
+push 10                    ; Parameter at [esp]
+call MyProc                ; Pushes return address at [esp]
+
+; Inside MyProc, before prologue:
+; [esp]   = Return address
+; [esp+4] = 10 (first parameter)
+; [esp+8] = 20 (second parameter)
+
+; After prologue (push ebp, mov ebp, esp):
+; [ebp+4] = Return address
+; [ebp+8] = 10 (first parameter)  <- This is why params start at [ebp+8]
+; [ebp+12] = 20 (second parameter)
+```
+
+This is why the first parameter is at `[ebp+8]` and not `[ebp+4]`.
+
+---
+
+### 5. Nested Function Calls
+
+When a function calls another function, its local variables must remain accessible.
+
+```asm
+OuterProc PROC
+    LOCAL outerVar:DWORD
+    
+    mov outerVar, 100
+    
+    INVOKE InnerProc       ; InnerProc will:
+                           ;   1. Push its own EBP
+                           ;   2. Set EBP = ESP
+                           ;   3. Use its own locals
+                           ;   4. Restore old EBP on return
+    
+    mov eax, outerVar      ; Still accessible because EBP was restored
+    ret
+OuterProc ENDP
+```
+
+The **chain of saved EBP values** creates a linked list that debuggers use to display call stacks.
+
+---
+
+## VI. Practical Debugging Tips
+
+### Viewing the Stack in a Debugger
+
+When debugging, examine these key memory locations:
+- `[ESP]` - Top of stack
+- `[EBP]` - Saved base pointer (points to caller's frame)
+- `[EBP+4]` - Return address
+- `[EBP+8]` onwards - Parameters
+- `[EBP-4]` onwards - Local variables
+
+### Common Stack Corruption Symptoms
+
+**1. Return to Wrong Address:**
+- Symptom: Program crashes immediately after `ret`
+- Cause: Stack pointer (ESP) misaligned before `ret`
+- Debug: Ensure pushes and pops are balanced
+
+**2. Corrupted Local Variables:**
+- Symptom: Local variables change unexpectedly
+- Cause: Buffer overflow, writing past array bounds
+- Debug: Check all array accesses
+
+**3. Preserved Registers Changed:**
+- Symptom: Caller's EBX/ESI/EDI have wrong values after call
+- Cause: Forgot to save/restore callee-saved registers
+- Debug: Verify push/pop pairs for EBX, ESI, EDI
+
+---
+
+## VII. Quick Reference Table
+
+| Directive | Purpose | Low-Level Equivalent | Key Warnings |
+|-----------|---------|---------------------|--------------|
+| **PROTO** | Function declaration | None (assembler directive) | Required before INVOKE; must match PROC signature |
+| **PROC** | Function implementation | Label + prologue/epilogue code | Don't manually add prologue; parameter names are stack aliases |
+| **LOCAL** | Allocate local variables | `sub esp, N` | Contains garbage; must initialize; aligned to 4 bytes |
+| **INVOKE** | Call function | `push ... / call` | Right-to-left parameter order; validates against PROTO |
+| **ADDR** | Get address | `lea eax, [ebp-X]` (locals) | **Clobbers EAX** for locals; use carefully in INVOKE |
+| **OFFSET** | Get address | Direct address constant | Globals only; resolved at link-time |
+| **RET N** | Return + clean stack | `ret N` | Used with STDCALL; N = bytes to pop |
+| **RET** | Return | `ret` | Used with CDECL; caller cleans stack |
+
+---
+
+## VIII. Complete Working Example
+
+```asm
+.386
+.model flat, stdcall
+option casemap:none
+
+; Prototypes
+AddThreeNumbers PROTO :DWORD, :DWORD, :DWORD
+DisplayResult PROTO :DWORD
+
+.data
+result DWORD ?
+
+.code
+start:
+    ; Call with INVOKE
+    INVOKE AddThreeNumbers, 10, 20, 30
+    mov result, eax
+    INVOKE DisplayResult, result
+    
+    ; Exit
+    ret
+
+; Function implementation
+AddThreeNumbers PROC num1:DWORD, num2:DWORD, num3:DWORD
+    LOCAL total:DWORD
+    
+    ; Initialize local (contains garbage otherwise)
+    mov total, 0
+    
+    ; Perform calculation
+    mov eax, num1
+    add eax, num2
+    add eax, num3
+    mov total, eax
+    
+    ; Return value in EAX
+    mov eax, total
+    ret
+AddThreeNumbers ENDP
+
+DisplayResult PROC value:DWORD
+    ; Preserve callee-saved register
+    push ebx
+    
+    mov ebx, value
+    ; ... display code ...
+    
+    ; Restore register
+    pop ebx
+    ret
+DisplayResult ENDP
+
+end start
+```
+
