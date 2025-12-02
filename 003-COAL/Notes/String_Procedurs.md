@@ -87,18 +87,6 @@ movsd                       ; [EDI:EDI+3] = [ESI:ESI+3], ESI+=4, EDI+=4
 - **ECX** (With REP) - Number of elements to copy
 - **DF** (Required) - Direction control
 
-**Operation:**
-```
-[EDI] ← [ESI]
-IF DF = 0 THEN
-    ESI ← ESI + size
-    EDI ← EDI + size
-ELSE
-    ESI ← ESI - size
-    EDI ← EDI - size
-END IF
-```
-
 **Typical Usage Pattern:**
 ```asm
 cld                         ; Direction: forward
@@ -193,18 +181,6 @@ main ENDP
 - **ECX** (With REP) - Maximum comparisons
 - **DF** (Required) - Direction control
 - **FLAGS** (Output) - Comparison result
-
-**Operation:**
-```
-temp ← [ESI] - [EDI]        ; Subtraction sets FLAGS
-IF DF = 0 THEN
-    ESI ← ESI + size
-    EDI ← EDI + size
-ELSE
-    ESI ← ESI - size
-    EDI ← EDI - size
-END IF
-```
 
 **Flags Affected:**
 - **ZF** (Zero Flag) - Set if bytes are equal
@@ -333,16 +309,6 @@ main ENDP
 - **DF** (Required) - Direction control
 - **FLAGS** (Output) - Comparison result
 
-**Operation:**
-```
-temp ← AL/AX/EAX - [EDI]    ; Subtraction sets FLAGS
-IF DF = 0 THEN
-    EDI ← EDI + size
-ELSE
-    EDI ← EDI - size
-END IF
-```
-
 **Critical Note:** ESI is **NOT used**. SCAS only uses EDI.
 
 **Typical Usage Pattern:**
@@ -458,16 +424,6 @@ main ENDP
 - **ECX** (With REP) - Number of elements to store
 - **DF** (Required) - Direction control
 
-**Operation:**
-```
-[EDI] ← AL/AX/EAX
-IF DF = 0 THEN
-    EDI ← EDI + size
-ELSE
-    EDI ← EDI - size
-END IF
-```
-
 **Critical Note:** ESI is **NOT used**. STOS only uses EDI.
 
 **Typical Usage Pattern:**
@@ -575,16 +531,6 @@ main ENDP
 - **AL/AX/EAX** (Output) - Loaded value
 - **ECX** (With REP) - Count (rarely used with LODS)
 - **DF** (Required) - Direction control
-
-**Operation:**
-```
-AL/AX/EAX ← [ESI]
-IF DF = 0 THEN
-    ESI ← ESI + size
-ELSE
-    ESI ← ESI - size
-END IF
-```
 
 **Critical Note:** EDI is **NOT used**. LODS only uses ESI.
 
