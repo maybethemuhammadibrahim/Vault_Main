@@ -37,174 +37,157 @@
 // ============================================================
 // IMPLEMENTATION (NO STL)
 // ============================================================
+#include <iostream>
+#include <string>
+#include <vector>
 
-// A simple Node for the Linked List (Chaining)
+using namespace std;
+
+// Ideally, use a prime number (e.g., 23 instead of 20)
+const int TABLE_SIZE = 23; 
+
 struct Node {
-    int key;
-    int value;
+    string key;
+    string data;
     Node* next;
 
-    Node(int k, int v) {
-        key = k;
-        value = v;
-        next = nullptr;
-    }
+    Node(string k, string d) : key(k), data(d), next(nullptr) {}
 };
 
 class HashTable {
 private:
-    Node** table;     // Array of pointers to Nodes (the buckets)
-    int capacity;     // Size of the array (number of buckets)
+    Node* table[TABLE_SIZE];
 
-    // MAIN HASH FUNCTION: Division Method
-    int hashFunction(int key) {
-        // Ensure the result is positive even for negative keys
-        return abs(key) % capacity;
-    }
-
-    // Helper to compute absolute value without <cmath>
-    int abs(int val) {
-        return (val < 0) ? -val : val;
+    // Improved Hash Function
+    int hashFunction(const string& key) const {
+        int sum = 0;
+        for (char c : key) {
+            sum += c;
+        }
+        // IMPORTANT: Use Modulo (%), not Division (/)
+        return sum % TABLE_SIZE; 
     }
 
 public:
-    // Constructor
-    HashTable(int cap) {
-        capacity = cap;
-        table = new Node*[capacity];
-        
-        // Initialize all buckets to nullptr
-        for (int i = 0; i < capacity; i++) {
+    HashTable() {
+        for (int i = 0; i < TABLE_SIZE; i++) {
             table[i] = nullptr;
         }
     }
 
-    // Destructor: Clean up memory
+    // Destructor to prevent memory leaks
     ~HashTable() {
-        for (int i = 0; i < capacity; i++) {
+        for (int i = 0; i < TABLE_SIZE; i++) {
             Node* current = table[i];
             while (current != nullptr) {
-                Node* toDelete = current;
+                Node* temp = current;
                 current = current->next;
-                delete toDelete;
+                delete temp;
             }
+            table[i] = nullptr;
         }
-        delete[] table;
     }
 
-    // INSERTION ADT
-    // Adds a key-value pair. If key exists, updates the value.
-    void insert(int key, int value) {
+    void insert(string key, string data) {
         int index = hashFunction(key);
-        
         Node* current = table[index];
 
-        // 1. Check if key already exists (Update)
+        // 1. Check if key exists and update
         while (current != nullptr) {
             if (current->key == key) {
-                current->value = value; // Update value
+                current->data = data;
                 return;
             }
             current = current->next;
         }
 
-        // 2. Key not found, insert at beginning (Collision Resolution: Chaining)
-        Node* newNode = new Node(key, value);
-        newNode->next = table[index]; // Point new node to current head
-        table[index] = newNode;       // Update head to new node
-        
-        std::cout << "Inserted key: " << key << " at index: " << index << std::endl;
+        // 2. If not found, insert at HEAD (Collision: Chaining)
+        Node* newNode = new Node(key, data);
+        newNode->next = table[index];
+        table[index] = newNode;
     }
 
-    // SEARCH ADT
-    // Returns the value associated with key, or -1 if not found
-    int search(int key) {
-        int index = hashFunction(key);
-        Node* current = table[index];
-
-        while (current != nullptr) {
-            if (current->key == key) {
-                return current->value;
-            }
-            current = current->next;
-        }
-        return -1; // Not found indicator
-    }
-
-    // DELETION ADT
-    // Removes a key from the table
-    void remove(int key) {
+    // New Delete Function
+    void remove(string key) {
         int index = hashFunction(key);
         Node* current = table[index];
         Node* prev = nullptr;
 
-        // Traverse the list at this bucket
         while (current != nullptr) {
             if (current->key == key) {
-                // Case 1: Node to delete is head
+                // Case 1: Node is head of the list
                 if (prev == nullptr) {
                     table[index] = current->next;
                 } 
-                // Case 2: Node to delete is in middle or end
+                // Case 2: Node is in middle or end
                 else {
                     prev->next = current->next;
                 }
-                
-                delete current;
-                std::cout << "Removed key: " << key << std::endl;
+                delete current; // Free memory
+                cout << "Deleted key: " << key << endl;
                 return;
             }
             prev = current;
             current = current->next;
         }
-        
-        std::cout << "Key " << key << " not found for deletion." << std::endl;
+        cout << "Key not found for deletion: " << key << endl;
     }
 
-    // Utility: Print the entire table structure
-    void printTable() {
-        std::cout << "\n--- Hash Table Status ---" << std::endl;
-        for (int i = 0; i < capacity; i++) {
-            std::cout << "Bucket " << i << ": ";
-            Node* current = table[i];
-            while (current != nullptr) {
-                std::cout << "[" << current->key << ":" << current->value << "] -> ";
-                current = current->next;
+    // Return string data directly, or empty string if not found
+    string search(string key) const {
+        int index = hashFunction(key);
+        Node* current = table[index];
+
+        while (current != nullptr) {
+            if (current->key == key) {
+                return current->data;
             }
-            std::cout << "NULL" << std::endl;
+            current = current->next;
         }
-        std::cout << "-------------------------\n" << std::endl;
+        return "Not Found";
+    }
+
+    void displayTable() {
+        for(int i = 0; i < TABLE_SIZE; i++) {
+            if(table[i] != nullptr) {
+                cout << "Index " << i << ": ";
+                Node* temp = table[i];
+                while(temp) {
+                    cout << "[" << temp->key << ":" << temp->data << "] -> ";
+                    temp = temp->next;
+                }
+                cout << "NULL" << endl;
+            }
+        }
     }
 };
 
-// Main Driver
 int main() {
-    // Create a Hash Table with 7 buckets (Prime number is simpler for Division method)
-    HashTable ht(7);
+    HashTable ht;
 
-    // 1. Test Insertion
-    ht.insert(10, 100); // 10 % 7 = 3
-    ht.insert(20, 200); // 20 % 7 = 6
-    ht.insert(15, 150); // 15 % 7 = 1
-    ht.insert(7, 700);  // 7 % 7 = 0
+    // Insertions
+    ht.insert("A", "Apple");
+    ht.insert("B", "Banana");
+    ht.insert("C", "Cherry");
+    
+    // Collision demonstration (assuming simple ascii sum creates collision)
+    ht.insert("D", "Date"); 
 
-    // 2. Test Collision (Chaining)
-    // 17 % 7 = 3 (Collides with 10)
-    std::cout << "\nInserting collision (17)..." << std::endl;
-    ht.insert(17, 170); 
+    // Update existing key
+    ht.insert("A", "Apricot");
 
-    ht.printTable();
+    cout << "--- Current Table ---" << endl;
+    ht.displayTable();
 
-    // 3. Test Search
-    std::cout << "Searching for 10: " << ht.search(10) << std::endl;
-    std::cout << "Searching for 17: " << ht.search(17) << std::endl;
-    std::cout << "Searching for 99: " << ht.search(99) << " (Should be -1)" << std::endl;
+    cout << "\n--- Search ---" << endl;
+    cout << "Value for B: " << ht.search("B") << endl;
 
-    // 4. Test Deletion
-    std::cout << "\nDeleting key 10..." << std::endl;
-    ht.remove(10); // Should remove 10 but keep 17 in the chain
+    cout << "\n--- Deletion ---" << endl;
+    ht.remove("B"); // Remove middle/head
+    ht.remove("Z"); // Remove non-existent
 
-    ht.printTable();
+    cout << "\n--- Final Table ---" << endl;
+    ht.displayTable();
 
     return 0;
 }
