@@ -15,11 +15,11 @@ public:
     }
 
     // Check if the queue is full
-    bool isFull() {
-        if ((front == 0 && rear == SIZE - 1) || (front == rear + 1))
-            return true;
-        return false;
-    }
+ bool isFull() {
+    if ((rear + 1) % SIZE == front)
+        return true;
+    return false;
+}
 
     // Check if the queue is empty
     bool isEmpty() {
@@ -99,4 +99,5 @@ int main() {
 
     return 0;
 }
+
 
