@@ -50,9 +50,15 @@ Terms related to *how* the sorting is actually performed.
 | **Radix** | $O(nk)$ | $O(nk)$ | $O(nk)$ | **Yes** | No | No | No | No | No | No |
 
 **Notes for Clarity:**
-1.  **Selection Sort Stability:** It is **No** because swapping a long-distance element might jump over an equal element.
-2.  **Insertion Sort Swapping:** It typically uses **Shifting** (copying values over) rather than direct swapping, which is more efficient.
-3.  **Shell Sort Time Complexity:** Depends heavily on the "Gap Sequence" used.
-4.  **Quick Sort In-Place:** Marked **Yes** as it sorts the array itself, but it technically uses $O(\log n)$ stack space for recursion.
-5.  **Radix Sort TC:** $k$ is the number of digits/bits in the largest number.
+Here are one-liner explanations for the stability of each algorithm:
+
+* **Bubble Sort (Stable):** It only swaps adjacent elements if they are strictly greater, so equal elements are never reordered.
+* **Selection Sort (Unstable):** Long-distance swaps can force an element to "jump" over an identical value later in the list (e.g., swapping a `5` at the start with a `2` found after another `5`).
+* **Insertion Sort (Stable):** New elements are inserted *behind* any pre-existing equal values during the shift process, preserving the original order.
+* **Shell Sort (Unstable):** Elements are sorted in independent "gap" groups, allowing identical values to cross each other depending on which gap group they fall into.
+* **Comb Sort (Unstable):** Like Shell Sort, the large "gap" comparisons allow elements to jump over identical values, disrupting the relative order.
+* **Heap Sort (Unstable):** The process of building the heap structure rearranges elements based on tree-position rather than index, ignoring original order.
+* **Merge Sort (Stable):** During the merge phase, if two values are equal, the code explicitly picks the element from the "left" (earlier) sub-array first.
+* **Quick Sort (Unstable):** The partitioning step swaps elements across the pivot from long distances, frequently jumping one equal value over another.
+* **Radix Sort (Stable):** It processes numbers digit-by-digit (LSD to MSD) using a stable sub-routine (like Counting Sort), which preserves the sorting work done on previous digits.
 
