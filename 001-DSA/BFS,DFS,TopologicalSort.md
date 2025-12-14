@@ -9,8 +9,6 @@
     * **Enqueue:** If a neighbor has **not** been visited yet, add it to the Queue and mark it as Visited immediately.
 3.  **Repeat:** Keep going until the Queue is empty.
 
-> **Visual Tip:** Imagine dropping a stone in water. The ripples move out in perfect circles. That is BFS.
-
 ---
 
 ### 2. DFS Traversal (Depth-First Search)
@@ -26,8 +24,6 @@
         * *Important:* Push neighbors in **Reverse Order** (e.g., if you want to visit Left then Right, push Right first then Left).
 3.  **Repeat:** Keep going until the Stack is empty.
 
-> **Visual Tip:** Imagine solving a maze. You go down one path until you hit a dead end, then you backtrack to the last junction and try the next path.
-
 ---
 
 ### 3. Topological Sorting (DFS Method)
@@ -42,4 +38,66 @@
 4.  **Repeat:** Continue this process until the start node is pushed. Then pick the next unvisited node in the graph and repeat steps 1-3.
 5.  **Final Result:** Once all nodes are processed, **Pop everything from the Stack**. That sequence is your Topological Sort.
 
-> **Visual Tip:** You are listing tasks in reverse. The task that relies on nothing else (the "last" thing you do) gets put in the stack first (at the bottom).
+To show cycle detection on paper for an exam, you need to track the **Recursion Stack** (current path) separately from the **Visited** set.
+
+**The Rule:** A cycle exists if you encounter a neighbor that is currently in the **Recursion Stack**.
+
+Here is the step-by-step dry run.
+
+### Key
+* **Visiting (Stack):** Node is currently active in recursion (Gray).
+* **Visited (Done):** Node and all children fully processed (Black).
+
+---
+
+### Step 1: Start DFS from Node 1
+**Stack:** `[1]`
+
+1.  Current: **1**. Neighbor: **2**.
+    * Push 2. **Stack:** `[1, 2]`
+2.  Current: **2**. Neighbor: **3**.
+    * Push 3. **Stack:** `[1, 2, 3]`
+3.  Current: **3**. Neighbors: **4, 7**.
+    * Pick 4. **Stack:** `[1, 2, 3, 4]`
+4.  Current: **4**. Neighbor: **5**.
+    * Push 5. **Stack:** `[1, 2, 3, 4, 5]`
+5.  Current: **5**. Neighbor: **6**.
+    * Push 6. **Stack:** `[1, 2, 3, 4, 5, 6]`
+6.  Current: **6**. Neighbors: **None**.
+    * Pop 6. Mark 6 as **Visited (Done)**.
+    * **Stack:** `[1, 2, 3, 4, 5]`
+7.  Back to **5**. No more neighbors.
+    * Pop 5. Mark 5 as **Visited (Done)**.
+    * **Stack:** `[1, 2, 3, 4]`
+8.  Back to **4**. No more neighbors.
+    * Pop 4. Mark 4 as **Visited (Done)**.
+    * **Stack:** `[1, 2, 3]`
+9.  Back to **3**. Remaining Neighbor: **7**.
+    * Push 7. **Stack:** `[1, 2, 3, 7]`
+10. Current: **7**. Neighbor: **5**.
+    * Check 5: Is it in the Stack? **No**. Is it Visited? **Yes**.
+    * *Result:* Cross Edge (safe). **No Cycle**.
+    * Pop 7. Mark 7 as **Visited**.
+    * **Stack:** `[1, 2, 3]`
+11. Backtrack 3 $\to$ 2 $\to$ 1. All marked Visited. Stack Empty.
+
+---
+
+### Step 2: Continue to next unvisited Node (8)
+**Stack:** `[8]`
+
+1.  Current: **8**. Neighbor: **9**.
+    * Push 9. **Stack:** `[8, 9]`
+2.  Current: **9**. Neighbor: **10**.
+    * Push 10. **Stack:** `[8, 9, 10]`
+3.  Current: **10**. Neighbor: **8**.
+    * Check 8: **Is it in the Stack?**
+    * **YES.** (8 is the ancestor of 10).
+
+### Conclusion for Exam
+**Cycle Detected.**
+The edge $10 \to 8$ is a **Back Edge** because node 8 is currently in the recursion stack (Visiting state).
+
+**Cycle Path:** $8 \to 9 \to 10 \to 8$
+
+Would you like me to write the pseudocode for this logic?
