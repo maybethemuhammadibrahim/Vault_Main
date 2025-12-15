@@ -121,3 +121,70 @@ P = \begin{bmatrix}
 
 This matrix \(P\) is orthogonal. If you calculate \(P^T A P\), you will get exactly:
 \[D = \begin{bmatrix} 8 & 0 & 0 \\ 0 & 2 & 0 \\ 0 & 0 & 2 \end{bmatrix}\]
+
+# 7.2.3 Spectral Decomposition
+
+## 1. The Core Concept (The Prism Analogy)
+**Text:** "Spectral Decomposition breaks a symmetric matrix $A$ into a sum of simpler matrices determined by its eigenvalues and eigenvectors."
+
+**Context & Intuition:**
+Think of the matrix $A$ as a beam of white light.
+* **Eigenvalues ($\lambda$)** are the specific "colors" (frequencies) inside the light.
+* **Spectral Decomposition** acts like a **prism**: it splits the complicated matrix $A$ into separate, pure "beams" (projection matrices).
+* Instead of one big transformation, you can view $A$ as adding up several tiny, simple transformations.
+
+The word "Spectrum" implies the set of eigenvalues of a matrix, just like the spectrum of light is the set of colors.
+
+---
+
+## 2. The Formula (The "Sum of Pieces")
+If $A$ is orthogonally diagonalized, we know $A = PDP^T$.
+If we multiply this out term-by-term, we get a beautiful summation formula known as the **Spectral Decomposition of A**:
+
+$$A = \lambda_1 \mathbf{u_1}\mathbf{u_1}^T + \lambda_2 \mathbf{u_2}\mathbf{u_2}^T + \dots + \lambda_n \mathbf{u_n}\mathbf{u_n}^T$$
+
+**Breakdown of the parts:**
+1.  **$\lambda_i$ (Scalar):** The "intensity" or scaling factor.
+2.  **$\mathbf{u_i}$ (Column Vector):** The orthonormal eigenvector.
+3.  **$\mathbf{u_i}\mathbf{u_i}^T$ (Outer Product):**
+    * **Watch out:** This is NOT a dot product (which is $u^T u$ and equals 1).
+    * This is a **matrix** multiplication of a column times a row ($n \times 1$ times $1 \times n$).
+    * The result is an $n \times n$ matrix called a **Projection Matrix**.
+
+---
+
+## 3. What does $\mathbf{u}\mathbf{u}^T$ actually do?
+The matrix $\mathbf{u}\mathbf{u}^T$ is a **projection matrix**.
+When this matrix hits any vector $x$, it squashes $x$ onto the line defined by $\mathbf{u}$.
+
+So, Spectral Decomposition tells us that applying matrix $A$ to a vector $x$ is the same as:
+1.  **Projecting** $x$ onto the first eigenvector direction ($\mathbf{u_1}\mathbf{u_1}^T$).
+2.  **Scaling** that projection by the eigenvalue $\lambda_1$.
+3.  **Repeating** this for all other eigenvectors.
+4.  **Adding** them all up to get the final result.
+
+---
+
+## 4. Example (Continuing from previous question)
+Recall our matrix $A = \begin{bmatrix} 4 & 2 & 2 \\ 2 & 4 & 2 \\ 2 & 2 & 4 \end{bmatrix}$.
+We found:
+* $\lambda_1 = 8$ with $\mathbf{u_1} = \begin{bmatrix} 1/\sqrt{3} \\ 1/\sqrt{3} \\ 1/\sqrt{3} \end{bmatrix}$
+* $\lambda_2 = 2$ with $\mathbf{u_2} = \begin{bmatrix} -1/\sqrt{2} \\ 1/\sqrt{2} \\ 0 \end{bmatrix}$
+* $\lambda_3 = 2$ with $\mathbf{u_3} = \begin{bmatrix} -1/\sqrt{6} \\ -1/\sqrt{6} \\ 2/\sqrt{6} \end{bmatrix}$
+
+**The Spectral Decomposition is:**
+
+$$
+A = \underbrace{8 \cdot (\mathbf{u_1}\mathbf{u_1}^T)}_{\text{Piece 1}} + \underbrace{2 \cdot (\mathbf{u_2}\mathbf{u_2}^T)}_{\text{Piece 2}} + \underbrace{2 \cdot (\mathbf{u_3}\mathbf{u_3}^T)}_{\text{Piece 3}}
+$$
+
+Let's calculate just the first piece ("Piece 1") to see what it looks like:
+
+$$
+\mathbf{u_1}\mathbf{u_1}^T = \begin{bmatrix} 1/\sqrt{3} \\ 1/\sqrt{3} \\ 1/\sqrt{3} \end{bmatrix} \begin{bmatrix} \frac{1}{\sqrt{3}} & \frac{1}{\sqrt{3}} & \frac{1}{\sqrt{3}} \end{bmatrix} = \begin{bmatrix} 1/3 & 1/3 & 1/3 \\ 1/3 & 1/3 & 1/3 \\ 1/3 & 1/3 & 1/3 \end{bmatrix}
+$$
+
+Then multiply by $\lambda_1 = 8$:
+$$\text{Piece 1} = \begin{bmatrix} 8/3 & 8/3 & 8/3 \\ 8/3 & 8/3 & 8/3 \\ 8/3 & 8/3 & 8/3 \end{bmatrix}$$
+
+If you calculate Piece 2 and Piece 3 and add all three matrices together, you will get exactly the original matrix $A$.
