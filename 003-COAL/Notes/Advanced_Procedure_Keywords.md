@@ -75,6 +75,81 @@ RawProc LABEL NEAR
           * If `myVar` is **Global**: It generates `push OFFSET myVar`.
           * If `myVar` is **Local**: It generates `lea eax, [ebp-X]` followed by `push eax`. (This is why `ADDR` is unique to MASM/INVOKE; it handles the `LEA` logic for you).
 
+
+```asm
+INCLUDE Irvine32.inc
+
+; 1. PROTO: Declares the function prototype (arguments and types)
+CalcRangeSum PROTO,
+    startVal:DWORD,
+    endVal:DWORD
+
+.data
+    msgStart    BYTE "Calculating sum from 10 to 20...", 0dh, 0ah, 0
+    msgResult   BYTE "The sum is: ", 0
+    
+.code
+main PROC
+    call Clrscr
+
+    mov  edx, OFFSET msgStart
+    call WriteString
+
+    ; 2. INVOKE: Calls the function, pushing arguments automatically
+    INVOKE CalcRangeSum, 10, 20
+
+    ; Result is returned in EAX
+    mov  edx, OFFSET msgResult
+    call WriteString
+    call WriteDec       ; Print the sum
+    call Crlf
+
+    exit
+main ENDP
+
+; ---------------------------------------------------------
+; CalcRangeSum
+; Calculates sum of integers from startVal to endVal.
+; Returns: Sum in EAX
+; ---------------------------------------------------------
+; 3. PROC with parameters and USES
+;    - 'uses ecx esi': Automatically pushes/pops these registers
+;    - 'startVal/endVal': Named parameters (accessible by name)
+CalcRangeSum PROC uses ecx esi,
+    startVal:DWORD,
+    endVal:DWORD
+
+    ; 4. LOCAL: Allocates stack space for local variables
+    LOCAL partialSum:DWORD
+
+    ; Initialize local variable
+    mov partialSum, 0
+
+    ; Set up loop
+    mov esi, startVal   ; Use ESI as the counter
+    
+    ; Calculate loop count: (end - start) + 1
+    mov ecx, endVal
+    sub ecx, startVal
+    inc ecx
+
+L1:
+    ; Add current counter (esi) to local variable
+    mov eax, partialSum
+    add eax, esi
+    mov partialSum, eax
+
+    inc esi             ; Move to next number
+    loop L1
+
+    ; Move final result to EAX for return
+    mov eax, partialSum
+
+    ret
+CalcRangeSum ENDP
+
+END main
+```
 #### 4\. ENTER
 
   * **Purpose:** A CPU instruction meant to replace the prologue (`push ebp`, `mov ebp, esp`, `sub esp, N`).
