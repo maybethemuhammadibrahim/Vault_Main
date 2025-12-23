@@ -13,7 +13,8 @@ In an inner product space, we look at sets of vectors $S = \{ \mathbf{v}_1, \mat
 | **Orthogonal Set** | Every pair of distinct vectors is orthogonal (perpendicular). | $\langle \mathbf{v}_i, \mathbf{v}_j \rangle = 0$ for all $i \neq j$. |
 | **Orthonormal Set** | (1) The set is Orthogonal **AND** <br> (2) Every vector has a length (norm) of 1. | $\langle \mathbf{v}_i, \mathbf{v}_j \rangle = 0$ <br> $\|\mathbf{v}_i\| = 1$ |
 
-> **Key Theorem:** If an orthogonal set consists of non-zero vectors, it is automatically **Linearly Independent**.
+> **Key Theorem:** If 𝑆 = {v1, v2, . . . , vn} is an orthogonal set of nonzero vectors in an inner product
+space, then 𝑆 is **linearly independent**..
 
 -----
 
