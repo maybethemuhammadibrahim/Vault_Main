@@ -151,3 +151,32 @@ ALTER TABLE Projects
 MODIFY Budget DECIMAL(12, 2) NOT NULL;
 
 ```
+
+
+### 1. Dropping an Unnamed Primary Key
+
+Because a table can only ever have one Primary Key, most SQL dialects allow you to drop it without knowing the name:
+
+```sql
+ALTER TABLE TableName DROP PRIMARY KEY;
+
+```
+
+*Note: For other unnamed constraints (like `CHECK` or `UNIQUE`), you cannot drop them blindly. You must first query your database's data dictionary (e.g., `information_schema.table_constraints`) to find the system-generated name, and then use `ALTER TABLE ... DROP CONSTRAINT system_name`.*
+
+### 2. Adding Multiple Constraints to One Attribute
+
+You simply list them one after the other, separated by spaces. The order of these specific keywords generally does not matter.
+
+```sql
+Email VARCHAR(100) UNIQUE DEFAULT 'no-reply@company.com'
+
+```
+
+### 3. Best Practices for ON DELETE and ON UPDATE
+
+* **`ON UPDATE CASCADE`:** **Best Practice.** If a parent's identifier changes, the child records should automatically update to stay linked. This prevents broken references.
+* **`ON DELETE RESTRICT` (or `NO ACTION`):** **Best Practice.** This is the safest approach. It prevents you from accidentally deleting a parent record that child records still rely on, protecting you from unintended data loss.
+* **When to use `ON DELETE CASCADE`:** Reserve this strictly for strong "part-of" relationships where the child absolutely cannot exist without the parent (e.g., deleting an `Order` should logically delete all of its `OrderItems`).
+
+Would you like me to show you the specific SQL query used to find those auto-generated constraint names in the `information_schema`?
