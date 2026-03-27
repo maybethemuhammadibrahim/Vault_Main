@@ -1,8 +1,45 @@
-### Part 1: The Clean Slate Implementation
+### Part 1: Categorization of SQL Commands
 
-When designing a database schema, it is best practice to define your rules (constraints) precisely when you create the tables.
+SQL commands are grouped by their operational purpose:
 
-Here is the complete SQL implementation:
+* **DDL (Data Definition Language):** Defines or modifies the database structure.
+    * `CREATE`: Builds databases and objects (tables, indexes, views, stored procedures, functions, triggers).
+    * `ALTER`: Modifies the structure of existing objects (adding/removing columns or constraints).
+    * `COMMENT`: Adds descriptive notes to objects in the data dictionary for documentation, without affecting structure.
+    * `RENAME`: Changes the name of an existing object.
+    * *(Other DDL commands include `DROP` and `TRUNCATE`)*
+* **DQL (Data Query Language):** Retrieves data (e.g., `SELECT`).
+* **DML (Data Manipulation Language):** Modifies data within tables (e.g., `INSERT`, `UPDATE`, `DELETE`).
+* **DCL (Data Control Language):** Manages access and permissions (e.g., `GRANT`, `REVOKE`).
+* **TCL (Transaction Control Language):** Manages state and transactions (e.g., `COMMIT`, `ROLLBACK`).
+
+---
+
+### Part 2: Data Types in SQL
+
+When defining columns, you must specify the data type.
+
+| Data Type | Description | Example |
+| :--- | :--- | :--- |
+| **INT** | Stores whole numbers. | Employee age: `25` |
+| **BIGINT** | Stores very large whole numbers. | Population: `9876543210` |
+| **DECIMAL / NUMERIC** | Stores fixed-point numbers with exact precision. | Product Price: `345.25` |
+| **REAL / FLOAT** | Stores approximate floating-point numbers. | Value of Pi(π): `3.14159` |
+| **MONEY / SMALLMONEY**| Stores currency values. | Salary: `7500.75` |
+| **DATE** | Stores only date values. | Birthdate: `'20-SEP-1999'` |
+| **TIME / DATETIME** | Stores time or both date and time. | Meeting: `'2026-01-25 14:30'` |
+| **CHAR(n)** | Stores fixed-length text. | Gender: `'M'` |
+| **NCHAR(n)** | Stores fixed-length Unicode text. | Grade symbol: `N'Ü'` |
+| **VARCHAR(n)** | Stores variable-length text. | Name: `'Hammad'` |
+| **NVARCHAR(n)** | Stores variable-length Unicode text. | Name in Urdu: `N'علی'` |
+| **BINARY / VARBINARY(n)**| Stores fixed or variable-length binary data. | File checksum: `0xFA01` |
+| **BIT** | Stores boolean values (0 or 1). | IsActive: `1` |
+
+---
+
+### Part 3: The Clean Slate Implementation (DDL - CREATE)
+
+It is best practice to define rules (constraints) precisely during table creation. 
 
 ```sql
 -- 1. Departments Table (Parent Table)
@@ -48,135 +85,107 @@ CREATE TABLE Projects (
         ON DELETE RESTRICT
         ON UPDATE CASCADE
 );
-
 ```
 
-*(Note: While `NOT NULL` and `DEFAULT` can theoretically be given explicit constraint names using the `CONSTRAINT` keyword in some database systems, it is standard practice to simply define them inline as shown above.)*
+*(Note: While `NOT NULL` and `DEFAULT` can be given explicit constraint names in some database systems, standard practice defines them inline.)*
 
 ---
 
-### Part 2: Detailed Breakdown of Keywords & Constraints
+### Part 4: Detailed Breakdown of Keywords & Constraints
 
-#### 1. The `CONSTRAINT` Keyword (Naming Constraints)
-
-* **What it is:** A keyword used to explicitly assign a name to a rule you are applying to a column or table.
+#### 1. The `CONSTRAINT` Keyword
+* **Definition:** Explicitly assigns a name to a column or table rule.
 * **Syntax:** `CONSTRAINT constraint_name constraint_type`
-* **Why it's essential:** If you do not name a constraint, the Database Management System (DBMS) will generate a random, unreadable name for it (e.g., `SYS_C001043`). If you ever need to modify or delete that rule later, you won't know what to call it.
-* **Naming Convention:** A standard practice is `ConstraintType_TableName_ColumnName` (e.g., `PK_Employees`, `FK_Projects_Employees`, `CHK_EmpSalary`).
+* **Purpose:** Prevents the DBMS from generating unreadable system names (e.g., `SYS_C001043`), allowing for easy identification during future modifications (`ALTER` or `DROP`).
+* **Naming Convention:** `ConstraintType_TableName_ColumnName` (e.g., `PK_Employees`, `FK_Projects_Employees`).
 
-#### 2. Basic Data Types & `NOT NULL`
+#### 2. `NOT NULL`
+* Ensures a column cannot be left empty. Any `INSERT` or `UPDATE` passing a `NULL` value fails.
 
-* **Data Types:** Define the nature of the data (e.g., `INT` for whole numbers, `VARCHAR(n)` for variable-length strings, `DATE`, `DECIMAL(precision, scale)`).
-* **`NOT NULL`:** Ensures that a column cannot be left empty. Any `INSERT` or `UPDATE` operation attempting to place a `NULL` value here will fail. It is typically defined at the column level.
-
-#### 3. Default Values (`DEFAULT <value>`)
-
-* **What it is:** Specifies a value to be inserted automatically if the user omits that column during an `INSERT` statement.
-* **Detail:** `DEFAULT` is technically not classified as a "constraint" in the strict relational algebra sense in all DBMSs, but it acts as a rule. You do not use the `CONSTRAINT` keyword to name a `DEFAULT` clause in standard SQL.
-* **Examples:** `DEFAULT 0`, `DEFAULT 'Pending'`, `DEFAULT CURRENT_DATE`.
+#### 3. `DEFAULT <value>`
+* Specifies a value inserted automatically if omitted during an `INSERT`.
+* *Note:* Not technically a strict relational algebra "constraint," but acts as a rule. Do not use the `CONSTRAINT` keyword for `DEFAULT` in standard SQL.
 
 #### 4. Primary Key (`PRIMARY KEY`)
-
-* **What it is:** Enforces **Entity Integrity**. It uniquely identifies each record in the table.
-* **Detail:** A Primary Key automatically implies `NOT NULL` and `UNIQUE`. A table can only have one primary key (though it can be a composite key made of multiple columns).
+* Enforces **Entity Integrity** by uniquely identifying each record.
+* Implies `NOT NULL` and `UNIQUE`. A table allows only one primary key.
 
 #### 5. Foreign Key and Referential Actions
-
-* **What it is:** Enforces **Referential Integrity**. It links a column (or columns) in one table to the Primary Key in another table, ensuring that relationships between records remain valid.
-* **`ON DELETE` and `ON UPDATE` Clauses:** These dictate what happens to the *child* rows when the referenced *parent* row is deleted or updated.
-* `CASCADE`: If the parent row is deleted/updated, automatically delete/update the matching child rows.
-* `SET NULL`: If the parent row is deleted/updated, set the foreign key value in the child rows to `NULL` (requires the child column to allow `NULL`s).
-* `RESTRICT` (or `NO ACTION`): Prevents the deletion/update of the parent row if any child rows reference it. This is usually the default behavior if no clause is specified.
-* `SET DEFAULT`: Sets the child row's foreign key to its defined default value.
-
-
+* Enforces **Referential Integrity** by linking columns between tables.
+* **`ON DELETE` / `ON UPDATE` Clauses:** Dictate behavior of child rows when parent rows change.
+    * `CASCADE`: Automatically delete/update matching child rows.
+    * `SET NULL`: Sets child foreign key to `NULL`.
+    * `RESTRICT` (or `NO ACTION`): Prevents parent modification if child rows exist.
+    * `SET DEFAULT`: Sets the child row's foreign key to its default value.
 
 #### 6. The `CHECK` Clause
-
-* **What it is:** Enforces **Domain Constraints** by ensuring that all values in a column satisfy a specific Boolean expression (a condition that evaluates to True, False, or Unknown).
-* **Detail:** It can be used to restrict ranges (e.g., `Age >= 18`), specific lists of values (e.g., `Status IN ('Active', 'Inactive')`), or formatting.
+* Enforces **Domain Constraints** by validating values against a Boolean expression.
+* Use cases: Value ranges (`Age >= 18`), specific lists (`Status IN ('Active', 'Inactive')`), or string formatting.
 
 ---
 
-### Part 3: Altering Stuff Later (The `ALTER TABLE` Command)
+### Part 5: Modifying Structure Later (DDL - ALTER)
 
-If you need to change rules after the table has already been created, you use the `ALTER TABLE` command. This is where explicitly naming your constraints (using the `CONSTRAINT` keyword) pays off.
+The `ALTER TABLE` command modifies existing table structures without deleting the table.
 
-#### 1. Adding a Constraint After Creation
-
-If you forgot to add a `CHECK` or `FOREIGN KEY` constraint initially, you can add it later. *Note: If existing data violates the new constraint, the `ALTER TABLE` command will fail.*
+#### 1. Adding Constraints After Creation
+If existing data violates the new constraint, the `ALTER TABLE` execution will fail.
 
 ```sql
--- Adding a CHECK constraint
-ALTER TABLE Employees
-ADD CONSTRAINT CHK_EmpEmailFormat CHECK (Email LIKE '%@%');
+-- Add a PRIMARY KEY
+ALTER TABLE table1 ADD PRIMARY KEY (Column1);
 
--- Adding a FOREIGN KEY constraint
-ALTER TABLE Projects
-ADD CONSTRAINT FK_Projects_Depts FOREIGN KEY (DepartmentID)
-    REFERENCES Departments(DepartmentID);
+-- Add a UNIQUE constraint
+ALTER TABLE table1 ADD CONSTRAINT const_N UNIQUE (Column1, Column2);
 
+-- Add a FOREIGN KEY
+ALTER TABLE table1 ADD FOREIGN KEY (Column_Name) REFERENCES table2 (Column_Name);
+
+-- Add a CHECK constraint (Two acceptable syntaxes)
+ALTER TABLE table1 ADD CHECK (Column_Condition);
+ALTER TABLE table1 ADD CONSTRAINT Constraint_Name CHECK (Condition);
 ```
 
-#### 2. Dropping a Constraint
-
-To remove a rule, you must know its name. This is why we named them during table creation.
+#### 2. Modifying Columns and Data Types
+Used to change a column's data type, size, or `NULL`/`NOT NULL` properties.
 
 ```sql
--- Removing the salary check constraint
-ALTER TABLE Employees
-DROP CONSTRAINT CHK_EmpSalary;
+-- Modify data type and allow NULLs (Syntax varies; Oracle/MySQL shown)
+ALTER TABLE Table1 MODIFY Column_Name datatype NULL;
 
--- Removing a foreign key constraint
-ALTER TABLE Employees
-DROP CONSTRAINT FK_Employees_Departments;
+-- Enforce NOT NULL on an existing column
+ALTER TABLE Projects MODIFY Budget DECIMAL(12, 2) NOT NULL;
 
+-- Set a DEFAULT value
+ALTER TABLE Employees ALTER COLUMN Salary SET DEFAULT 50000;
+
+-- Drop a DEFAULT value
+ALTER TABLE Employees ALTER COLUMN Salary DROP DEFAULT;
 ```
 
-#### 3. Modifying `NOT NULL` and `DEFAULT`
-
-Adding or dropping `NOT NULL` and `DEFAULT` is usually done by modifying the column itself, rather than using `ADD/DROP CONSTRAINT` (though syntax can vary slightly between Oracle, SQL Server, and PostgreSQL).
-
-```sql
--- To add a DEFAULT value to an existing column
-ALTER TABLE Employees
-ALTER COLUMN Salary SET DEFAULT 50000;
-
--- To drop a DEFAULT value
-ALTER TABLE Employees
-ALTER COLUMN Salary DROP DEFAULT;
-
--- To make an existing column NOT NULL (Oracle/MySQL syntax usually requires MODIFY)
-ALTER TABLE Projects
-MODIFY Budget DECIMAL(12, 2) NOT NULL;
-
-```
-
-
-### 1. Dropping an Unnamed Primary Key
-
-Because a table can only ever have one Primary Key, most SQL dialects allow you to drop it without knowing the name:
+#### 3. Dropping Constraints
+Requires the exact constraint name (unless it is a primary key).
 
 ```sql
+-- Drop a named CHECK constraint
+ALTER TABLE Employees DROP CONSTRAINT CHK_EmpSalary;
+
+-- Drop an unnamed PRIMARY KEY
 ALTER TABLE TableName DROP PRIMARY KEY;
-
 ```
+*(Note: To drop unnamed `CHECK` or `UNIQUE` constraints, query the data dictionary (e.g., `information_schema.table_constraints`) to locate the system-generated name first.)*
 
-*Note: For other unnamed constraints (like `CHECK` or `UNIQUE`), you cannot drop them blindly. You must first query your database's data dictionary (e.g., `information_schema.table_constraints`) to find the system-generated name, and then use `ALTER TABLE ... DROP CONSTRAINT system_name`.*
+---
 
-### 2. Adding Multiple Constraints to One Attribute
+### Part 6: Relational Database Best Practices
 
-You simply list them one after the other, separated by spaces. The order of these specific keywords generally does not matter.
-
+#### 1. Applying Multiple Inline Constraints
+List them sequentially separated by spaces. Order does not impact execution.
 ```sql
 Email VARCHAR(100) UNIQUE DEFAULT 'no-reply@company.com'
-
 ```
 
-### 3. Best Practices for ON DELETE and ON UPDATE
-
-* **`ON UPDATE CASCADE`:** **Best Practice.** If a parent's identifier changes, the child records should automatically update to stay linked. This prevents broken references.
-* **`ON DELETE RESTRICT` (or `NO ACTION`):** **Best Practice.** This is the safest approach. It prevents you from accidentally deleting a parent record that child records still rely on, protecting you from unintended data loss.
-* **When to use `ON DELETE CASCADE`:** Reserve this strictly for strong "part-of" relationships where the child absolutely cannot exist without the parent (e.g., deleting an `Order` should logically delete all of its `OrderItems`).
-
-Would you like me to show you the specific SQL query used to find those auto-generated constraint names in the `information_schema`?
+#### 2. Managing Referential Actions
+* **`ON UPDATE CASCADE`:** **Recommended.** Keeps child records accurately linked if a parent's identifier changes.
+* **`ON DELETE RESTRICT` (or `NO ACTION`):** **Recommended.** Prevents accidental data loss by blocking the deletion of parent records tied to child records.
+* **`ON DELETE CASCADE`:** Use strictly for "part-of" relationships where child records have no logical existence without the parent (e.g., `Orders` and `OrderItems`).
