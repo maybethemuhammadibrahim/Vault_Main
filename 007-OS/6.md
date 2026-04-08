@@ -1,0 +1,151 @@
+### 1. Race Condition
+**Formal Definition:** A concurrency anomaly where multiple processes access and manipulate shared data simultaneously, and the final state of the data depends on the unpredictable order of execution.
+
+**Intuitive Explanation:** Imagine two people logging into a joint bank account simultaneously to deposit $50. The account has $100. They both read the balance at the same time ($100), both add $50 to their local view ($150), and both write the new balance back to the server. The final balance becomes $150 instead of $200. The processes "raced" against each other, and their operations overlapped, corrupting the data.
+
+---
+
+### 2. The Critical Section Problem (CSP)
+**Formal Definition:** The architectural challenge of designing a protocol that allows $n$ concurrent processes to share data safely. It requires ensuring that when one process is executing a specific segment of code that modifies shared data (the critical section), no other process can execute its corresponding critical section.
+
+**Intuitive Explanation:** Think of the critical section as a single-occupancy fitting room in a store. If the shared data is inside that fitting room, only one person (process) can be inside at a time. The CSP is the problem of designing a reliable lock and line system so people don't walk in on each other.
+
+---
+
+### 3. General Structure of a Process
+**Formal Definition:** The standard algorithmic template used by processes participating in a critical section protocol, dividing execution into specific phases to manage access to shared resources safely.
+
+**Intuitive Explanation:** Before using shared data, a process must explicitly ask for the key. Once it has the key, it does its work. When finished, it drops the key off for the next process and returns to its private work.
+
+**Structure:**
+```c
+do {
+    // Entry Section: Request permission to enter the critical section.
+    
+    // Critical Section: Execute code that accesses/modifies shared variables.
+    
+    // Exit Section: Release permission, allowing others to enter.
+    
+    // Remainder Section: Execute independent code that does not touch shared data.
+} while (true);
+```
+
+---
+
+### 4. Requirements for a Valid CSP Solution
+**Formal Definition:** The three mandatory conditions that any synchronization algorithm must satisfy to successfully and safely resolve the Critical Section Problem. 
+
+**Intuitive Explanations:**
+1. **Mutual Exclusion:** * *Concept:* If Process A is in the critical section, no other process can be in it.
+   * *Intuition:* The fitting room door locks. Absolute isolation of the shared resource.
+2. **Progress:** * *Concept:* If no process is in the critical section, and some processes want to enter, the decision of who goes next cannot be delayed indefinitely.
+   * *Intuition:* If the fitting room is empty and there is a line, the people in line must quickly agree on who goes next. The system cannot freeze just because processes are deciding whose turn it is.
+3. **Bounded Waiting:** * *Concept:* Once a process requests entry, there is a hard limit on the number of times other processes are allowed to enter before the original request is granted.
+   * *Intuition:* You cannot be stuck at the back of the line forever while newcomers constantly cut in front of you. Starvation is prevented.
+
+*(Note: These solutions assume processes execute at a non-zero speed, but make no assumptions about the relative speed of different processes.)*
+
+---
+
+### 5. Critical-Section Handling in OS
+**Formal Definition:** The design approaches utilized by an operating system kernel to prevent race conditions when modifying internal kernel data structures.
+
+**Intuitive Explanation:** How the core OS protects its own data.
+* **Preemptive Kernel:** Allows a process running in kernel mode to be interrupted and swapped out. Harder to design (requires complex locks) but makes the system highly responsive.
+* **Non-preemptive Kernel:** A process runs in the kernel until it finishes, blocks, or voluntarily yields. Naturally free of race conditions because it acts as a monopoly—it refuses to give up the CPU to anyone else until it is done modifying data.
+
+---
+
+### 6. Software Solution: Peterson’s Solution
+**Formal Definition:** A classic, software-based synchronization algorithm for two processes that ensures mutual exclusion, progress, and bounded waiting using two shared variables: `turn` and `flag`.
+
+**Intuitive Explanation:** Imagine two polite roommates sharing a bathroom. 
+* `flag[i] = true` means "I want to use the bathroom."
+* `turn = j` means "But I yield to you; you can go first."
+A process will only wait if the other process *wants* to go AND it is the other process's *turn*. 
+
+*(Note: This is an excellent theoretical algorithm, but fails on modern CPUs because modern processors reorder instructions for efficiency, which breaks the logic).*
+
+**Code Structure:**
+```c
+// Shared variables
+int turn;
+boolean flag[2]; // flag[i] = true means Process i is ready to enter
+
+while (true){
+    flag[i] = true;    // I want to enter
+    turn = j;          // But I will let the other process go first if they want
+    
+    // Wait here if the other process wants to enter AND it is their turn
+    while (flag[j] && turn == j); 
+    
+    /* Critical Section */
+    
+    flag[i] = false;   // I am done, I no longer want to enter
+    
+    /* Remainder Section */
+}
+```
+
+---
+
+### 7. Synchronization Hardware
+**Formal Definition:** Low-level CPU architectural features and instructions designed to facilitate indivisible operations, serving as the foundational building blocks for robust synchronization tools.
+
+**Intuitive Explanation:** Software solutions are fragile. Instead, we rely on the physical CPU hardware to guarantee that certain critical actions happen in one unbreakable step.
+
+#### A. Disabling Interrupts (Uniprocessors)
+By instructing the CPU to ignore external interrupts, the current code cannot be preempted. 
+* *Why it's bad:* Inefficient and non-scalable on multiprocessor systems (disabling interrupts across all cores is slow and halts the entire system).
+
+#### B. Memory Barriers
+**Formal Definition:** A hardware instruction that enforces an ordering constraint on memory operations, guaranteeing that memory modifications made before the barrier become visible to all other processors before any modifications made after the barrier.
+* **Strongly Ordered:** Modifications are instantly visible everywhere.
+* **Weakly Ordered:** Modifications might sit in a local CPU cache and not be immediately visible to other CPUs.
+
+**Code Explanation (Addressing your specific question):**
+```c
+// Thread 1
+while (!flag)
+    memory_barrier();
+print x;
+
+// Thread 2
+x = 100;
+memory_barrier();
+flag = true;
+```
+* **What Thread 2 is doing:** It updates `x` to 100. The `memory_barrier()` acts like a "save and sync" command. It forces the CPU to write `x = 100` out to main memory *before* it is allowed to execute `flag = true`.
+* **What Thread 1 is doing:** It waits for `flag` to become true. Once it is, the `memory_barrier()` forces Thread 1 to fetch the freshest data from main memory rather than relying on stale cached data. This guarantees that when it prints `x`, it will absolutely print `100` and not an old value.
+
+#### C. Hardware Instructions (`test_and_set`)
+**Formal Definition:** An atomic (uninterruptible) hardware instruction that reads the current value of a boolean variable and sets it to true in a single, continuous CPU cycle.
+
+**Intuitive Explanation:** It works like a master key. You check if the door is unlocked (false) AND lock it (true) in one swift physical motion. Because the CPU guarantees this is one unbreakable step, two processes can never grab the lock simultaneously.
+
+**Implementation:**
+```c
+boolean test_and_set (boolean *target) {
+    boolean rv = *target; // Store current state
+    *target = true;       // Set state to true (locked)
+    return rv;            // Return original state
+}
+
+// Solution using test_and_set
+do {
+    // If lock is true, it returns true and loops (waits).
+    // If lock is false, it returns false (breaks loop) AND atomically sets lock to true.
+    while (test_and_set(&lock)); 
+    
+    /* Critical section */
+    
+    lock = false; // Unlock
+    
+    /* Remainder section */
+} while (true);
+```
+
+#### D. Atomic Variables
+**Formal Definition:** High-level data types provided by systems or libraries that guarantee basic operations (such as increment or decrement) execute atomically without the programmer needing to write explicit lock/unlock code.
+
+**Intuitive Explanation:** Instead of manually building a lock around a simple counter, you use an "atomic integer." The system handles the complex, low-level hardware instructions (like compare-and-swap) in the background to ensure that if 100 processes try to run `increment(&sequence)` at the exact same time, the counter correctly goes up by exactly 100 without any race conditions.

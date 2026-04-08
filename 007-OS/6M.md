@@ -1,0 +1,327 @@
+### 1. Mutex Locks (Mutual Exclusion)
+**Formal Definition:** A high-level software synchronization tool used to protect critical sections by ensuring only one process can acquire the lock at a time. It requires atomic `acquire()` and `release()` operations.
+
+**Intuitive Explanation:** Think of a Mutex as a single physical key for a shared bathroom. To use the bathroom (critical section), you must take the key (`acquire()`). If someone else has the key, you wait. When finished, you return the key (`release()`).
+
+**Spinlocks (Busy Waiting):** A specific type of mutex where the waiting process continuously loops (spins) checking if the lock is available. This wastes CPU cycles but avoids context-switching overhead if the wait is very short.
+
+**Conceptual Exam Template: Spinlock Mutex**
+```c
+// Shared boolean variable
+boolean available = true;
+
+void acquire() {
+    while (!available)
+        ; // Busy wait (spinlock)
+    available = false;
+}
+
+void release() {
+    available = true;
+}
+
+// Process Execution Structure
+while (true) {
+    acquire();
+    /* Critical Section */
+    release();
+    /* Remainder Section */
+}
+```
+
+**Practical Exam Template: Pthreads Mutex (C API)**
+```c
+#include <pthread.h>
+
+// 1. Declare the mutex
+pthread_mutex_t mutex;
+
+void initialize() {
+    // 2. Initialize: Arg 1 is pointer to mutex, Arg 2 is attributes (NULL = default)
+    pthread_mutex_init(&mutex, NULL); 
+}
+
+void* worker_thread(void* arg) {
+    // 3. Acquire the lock (blocks if unavailable)
+    pthread_mutex_lock(&mutex);
+    
+    /* Critical Section */
+    
+    // 4. Release the lock
+    pthread_mutex_unlock(&mutex);
+    
+    return NULL;
+}
+```
+
+---
+
+### 2. Semaphores
+**Formal Definition:** An integer variable `S` that, apart from initialization, is accessed only through two standard atomic operations: `wait()` (or P) and `signal()` (or V). 
+
+**Intuitive Explanation:** A semaphore is a counter that tracks how many identical resources are currently available. If the count is greater than 0, a process takes a resource and decreases the count. If the count is 0, the process waits.
+
+### 1. Binary Semaphores (0 and 1)
+A binary semaphore is just a counting semaphore where the maximum capacity is artificially restricted to `1`. Imagine a jar that can only hold exactly one key.
+
+* **`1` means AVAILABLE:** There is **1** key currently in the jar. If a process asks for it (`wait()`), it takes the key, and the jar's count drops to 0. This is the exact equivalent of your Mutex `true`.
+* **`0` means UNAVAILABLE (Locked):** There are **0** keys in the jar because someone else already took it. If you call `wait()` now, you must wait until the person returns the key (`signal()`), bringing the count back to 1. This is the exact equivalent of your Mutex `false`.
+
+**How it compares to your Mutex logic:**
+
+| System State | Mutex Logic | Binary Semaphore Logic | Meaning |
+| :--- | :--- | :--- | :--- |
+| **Unlocked** | Boolean is `True` | Value is `1` | 1 resource is ready to be used. |
+| **Locked** | Boolean is `False` | Value is `0` | 0 resources are available. You must wait. |
+
+---
+
+### 2. Counting Semaphores (The Range of Numbers)
+While a binary semaphore/mutex protects a *single* resource (like one shared variable), a counting semaphore protects a **pool of identical resources** (like 5 separate database connections or 10 empty slots in an array).
+
+The range of positive numbers literally represents **the exact number of resources that are currently free.**
+
+Imagine a parking lot with 5 spaces. The semaphore starts at `5`.
+* **Car 1 enters (`wait()`):** Takes a ticket. Semaphore drops to **`4`** (4 spaces left).
+* **Car 2 enters (`wait()`):** Takes a ticket. Semaphore drops to **`3`** (3 spaces left).
+* **... Three more cars enter:** Semaphore drops to **`0`**.
+* **`0` means UNAVAILABLE:** The lot is completely full. The next car that arrives and calls `wait()` must park outside and wait.
+* **Car 1 leaves (`signal()`):** Hands back the ticket. Semaphore goes up to **`1`**. The waiting car can now enter.
+
+---
+
+### 3. What about Negative Numbers?
+If you look closely at the "Implementation with no Busy waiting" pseudo-code from your previous notes, you'll see the semaphore value dropping below zero (`if (S->value < 0)`). 
+
+If a semaphore implementation allows negative numbers, the negative value has a very specific meaning: **It tells you exactly how many processes are stuck in line waiting.**
+
+Let's go back to the parking lot (starts at 5 spaces):
+1.  5 cars enter. The semaphore is `0` (Lot is full).
+2.  Car 6 arrives and calls `wait()`. The system decrements the semaphore anyway. The value is now **`-1`**.
+    * *Meaning:* 0 spaces are free, and **1** car is waiting in line.
+3.  Car 7 arrives and calls `wait()`. Value becomes **`-2`**.
+    * *Meaning:* 0 spaces free, and **2** cars are waiting in line.
+
+When a car leaves the lot and calls `signal()`, the system increments the value from `-2` to `-1`. Because the value is still `<= 0`, the system knows it needs to wake up one of the cars waiting in line and let them in.
+
+### Summary
+* **Positive Number (`N > 0`):** There are `N` resources available. Go ahead and take one.
+* **Zero (`0`):** All resources are currently taken. You must wait.
+* **Negative Number (`-N`):** All resources are taken, AND there are exactly `N` processes waiting in line ahead of you.
+
+**Execution Ordering Example:**
+You can use a semaphore initialized to `0` to force Process 2 to wait for Process 1 to finish a specific task.
+```c
+// Shared semaphore initialized to 0
+semaphore synch = 0;
+
+// Process 1
+S1; // Execute task
+signal(synch); // Signal that S1 is done
+
+// Process 2
+wait(synch); // Blocks here until P1 calls signal()
+S2; // Executes only after S1
+```
+
+**Conceptual Exam Template: Semaphore with Busy Waiting**
+```c
+int S = 1; // Semaphore initialization
+
+void wait(int S) {
+    while (S <= 0)
+        ; // Busy wait
+    S--;
+}
+
+void signal(int S) {
+    S++;
+}
+```
+
+**Conceptual Exam Template: Semaphore WITHOUT Busy Waiting (Blocking)**
+Instead of spinning, the process yields the CPU and goes to sleep.
+```c
+typedef struct {
+    int value;
+    struct process *list; // Queue of waiting processes
+} semaphore;
+
+void wait(semaphore *S) {
+    S->value--;
+    if (S->value < 0) {
+        // Add this process to S->list
+        block(); // Suspend the process, yield CPU
+    }
+}
+
+void signal(semaphore *S) {
+    S->value++;
+    if (S->value <= 0) {
+        // Remove a process P from S->list
+        wakeup(P); // Move process P from waiting to ready queue
+    }
+}
+```
+
+### POSIX Semaphores: Named vs. Unnamed
+**Formal Difference:**
+* **Unnamed Semaphores:** Exist in memory. They can only be used by threads within the same process or related processes (like parent and child) that explicitly share a region of memory.
+* **Named Semaphores:** Exist at the system level and are identified by a string name (e.g., `"SEM"`). They can be accessed by completely independent, unrelated processes running on the same operating system, simply by referring to the shared name.
+
+**Intuitive Explanation:** An unnamed semaphore is like a sign-out sheet inside a private company office; only employees (threads) inside the building (process) can use it. A named semaphore is like a public locker at a train station with a specific number (name); anyone who knows the locker number can access it, regardless of where they came from.
+
+---
+
+### 1. POSIX Unnamed Semaphores
+**Formal Definition:** A memory-based synchronization primitive initialized directly via a pointer, strictly requiring shared memory access between the cooperating threads or processes.
+
+**Practical Exam Template (C API):**
+```c
+#include <semaphore.h>
+
+// 1. Declare the semaphore variable
+sem_t sem;
+
+void initialize() {
+    // 2. Initialize the semaphore
+    // Arg 1: pointer to semaphore
+    // Arg 2: sharing flag (0 = shared between threads of the same process)
+    // Arg 3: initial value (e.g., 1 for a binary semaphore/mutex equivalent)
+    sem_init(&sem, 0, 1); 
+}
+
+void* worker_thread(void* arg) {
+    // 3. Acquire (wait)
+    sem_wait(&sem);
+    
+    /* Critical Section */
+    
+    // 4. Release (signal)
+    sem_post(&sem);
+    
+    return NULL;
+}
+```
+
+---
+
+### 2. POSIX Named Semaphores
+**Formal Definition:** A file-system-like synchronization primitive accessed via a string identifier, allowing mutual exclusion and synchronization across entirely independent, unrelated processes.
+
+**Practical Exam Template (C API):**
+```c
+#include <semaphore.h>
+#include <fcntl.h> // For O_* constants
+#include <sys/stat.h> // For mode constants
+
+// 1. Declare a pointer for the named semaphore
+sem_t *sem;
+
+void initialize() {
+    // 2. Create and initialize the semaphore
+    // Arg 1: Name of the semaphore
+    // Arg 2: O_CREAT flag (create if it doesn't exist)
+    // Arg 3: File permissions (0666 = read/write for everyone)
+    // Arg 4: Initial value (1)
+    sem = sem_open("SEM", O_CREAT, 0666, 1);
+}
+
+void process_execution() {
+    // 3. Acquire the semaphore
+    sem_wait(sem);
+    
+    /* Critical section */
+    
+    // 4. Release the semaphore
+    sem_post(sem);
+}
+```
+
+---
+
+### 3. POSIX Condition Variables
+**Formal Definition:** A synchronization primitive that allows threads to suspend execution and release the CPU until a specific logical condition involving shared data becomes true. Because C/C++ lack built-in "monitors," condition variables must always be strictly paired with a POSIX Mutex.
+
+**Intuitive Explanation:** A condition variable allows a thread to say, "I have the lock, but the data isn't what I need yet (e.g., `a != b`). I will go to sleep and drop the lock so someone else can change the data. Wake me up when the condition might be true." 
+
+**Core Mechanism:** The `pthread_cond_wait()` function performs three steps **atomically**:
+1. It unlocks the associated mutex.
+2. It puts the calling thread to sleep on the condition variable's waiting queue.
+3. Upon being woken up (via a signal), it automatically re-acquires the mutex before returning.
+
+**Practical Exam Template (C API):**
+```c
+#include <pthread.h>
+
+// 1. Declare Mutex and Condition Variable
+pthread_mutex_t mutex;
+pthread_cond_t cond_var;
+
+// Shared variables forming the "condition"
+int a = 0;
+int b = 1;
+
+void initialize() {
+    // 2. Initialize both
+    pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&cond_var, NULL);
+}
+
+// Thread 1: Waiting for a condition (a == b)
+void* waiting_thread(void* arg) {
+    pthread_mutex_lock(&mutex);
+    
+    // Always use a 'while' loop to check the condition, not an 'if'.
+    // This protects against "spurious wakeups" (waking up for the wrong reason).
+    while (a != b) {
+        // Automatically releases mutex and goes to sleep.
+        // Re-acquires mutex before waking up.
+        pthread_cond_wait(&cond_var, &mutex);
+    }
+    
+    /* Proceed with work knowing a == b */
+    
+    pthread_mutex_unlock(&mutex);
+    return NULL;
+}
+
+// Thread 2: Modifying data and signaling
+void* signaling_thread(void* arg) {
+    pthread_mutex_lock(&mutex);
+    
+    // Modify the shared variables to make the condition true
+    a = b; 
+    
+    // Signal ONE waiting thread to wake up and check the condition
+    // Use pthread_cond_broadcast() to wake ALL waiting threads
+    pthread_cond_signal(&cond_var);
+    
+    // Must unlock so the woken thread can actually acquire it
+    pthread_mutex_unlock(&mutex);
+    
+    return NULL;
+}
+```
+
+---
+
+### 3. Concurrency Hazards: Deadlock vs. Starvation
+
+| Feature | Deadlock | Starvation |
+| :--- | :--- | :--- |
+| **Definition** | A set of blocked processes each holding a resource and waiting to acquire a resource held by another process in the set. | The indefinite postponement of a process because the required resource is constantly allocated to other processes. |
+| **Intuition** | Circular gridlock at an intersection. Nobody can move. | Trying to merge onto a busy highway. The highway is moving, but you never get a gap. |
+| **System State** | The involved processes are permanently stuck. | The system is making progress, but one specific process is ignored. |
+| **Cause** | Circular waiting for resources. | Poor scheduling algorithms or priority biases. |
+
+---
+
+### 4. Priority Inversion
+**Formal Definition:** A scheduling anomaly where a higher-priority process is blocked waiting for a lock held by a lower-priority process, and the lower-priority process is preempted by a medium-priority process, effectively inverting the intended execution order.
+
+**Intuitive Explanation:** The CEO (high priority) needs a file locked by the Intern (low priority). Normally, the Intern would finish and hand it over. However, a Manager (medium priority) comes in and gives the Intern busywork, preventing the Intern from finishing the file. The Manager is effectively delaying the CEO.
+
+**Solution: Priority-Inheritance Protocol**
+When a lower-priority process holds a lock needed by a higher-priority process, it temporarily inherits the priority of the higher-priority process.
+* *Application:* The Intern temporarily gets "CEO-level priority" so the Manager cannot interrupt them. The Intern finishes the file quickly, unlocks it for the CEO, and reverts back to Intern-level priority.
