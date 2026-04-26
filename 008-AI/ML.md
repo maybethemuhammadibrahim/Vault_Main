@@ -238,3 +238,83 @@ For example, if you are looking at a feature like "Refund," which only has two p
 * You add 1 to the count of "Yes".
 * You add 1 to the count of "No".
 * Because you just artificially added 2 new observations to your data's numerator, you must add $k$ (which is 2) to your total denominator so the math remains accurate and proportional.
+
+---
+The **k-Nearest Neighbors (k-NN)** algorithm is one of the most fundamental and intuitive supervised machine learning algorithms. It operates on the principle of feature similarity, classifying a new, unknown data point based on how its closest neighboring data points are classified. 
+
+Because k-NN relies entirely on the training data to make predictions rather than building a generalized mathematical model upfront, it is considered a **"lazy learner"**. During the training phase, it simply memorizes the entire dataset.
+
+### **What Type of Data it Identifies (Most Common Use)**
+k-NN is primarily used for **classification tasks**, meaning it identifies discrete categorical labels (e.g., determining if a medical patient is "normal" or "underweight", or distinguishing between an image of a cat or a dog). However, it can also be adapted for **regression tasks** to predict continuous real-valued numbers. 
+
+It performs best and is most commonly used when the dataset meets the following criteria:
+*   **The data is labeled:** The algorithm needs known targets to learn from.
+*   **The dataset is small:** Because the algorithm compares new data against every single existing data point, it requires a lot of processing power. It is ideal for small datasets but becomes incredibly slow as data scales up into gigabytes.
+*   **The data is noise-free:** Since k-NN relies on proximity, too much noise or irrelevant data can easily confuse the algorithm.
+
+### **How k-NN Works (Step-by-Step)**
+When you introduce a new, unlabeled data point, the k-NN algorithm goes through the following process to identify it:
+
+1.  **Calculate Distances:** The algorithm measures the exact distance between the new data point and every single point in the memorized training dataset. For continuous numeric data, the most common measurement used is the **Euclidean distance** formula (measuring the straight-line distance between points). Other metrics can be used depending on the data type, such as Manhattan distance, Cosine similarity for text, or Hamming distance for categorical strings.
+2.  **Find the 'k' Nearest Neighbors:** The algorithm sorts all the training data points based on their calculated distance to the new point, from closest to furthest. It then selects the top **k** closest points (the "neighbors"). 
+3.  **Vote on the Label:** 
+    *   **In Classification:** The algorithm looks at the class labels of those *k* nearest neighbors and takes a vote. The new data point is assigned to the class that holds the **majority vote**.
+    *   **In Regression:** Instead of voting, the algorithm calculates the mean (average) value of the *k* nearest neighbors and returns that numerical value.
+
+### **Descriptive Notes on Parameter Tuning and Performance**
+
+**Choosing the right value for 'k'**
+The "k" in k-NN is a user-defined parameter. Choosing the right value (parameter tuning) is crucial for the model's accuracy:
+*   A **small k** (e.g., $k=1$) means the model is highly sensitive to noise, resulting in low bias but high variance. 
+*   A **large k** provides smoother decision boundaries and lower variance, but too large of a *k* can introduce higher bias and take a long time to process.
+*   **The Rule of Thumb:** A common practice to find the optimal *k* is to calculate the square root of *n* (the total number of values in your dataset). If your classification involves an even number of categories, you should adjust *k* to an **odd number** to prevent tied votes. 
+
+**Advantages**
+*   **Highly intuitive and simple** to understand and implement.
+*   **Non-parametric:** It makes no underlying assumptions about the distribution of the data.
+*   Easily handles **multiclass problems**.
+
+**Disadvantages and Limitations**
+*   **Curse of Dimensionality:** k-NN performs poorly as the number of features (dimensions) increases. In high-dimensional spaces, the distance between points becomes less meaningful, and irrelevant features can dominate the similarity calculation.
+*   **Extremely slow on large data:** Because it calculates the distance to all points during the prediction phase, it is computationally expensive.
+*   **Requires Feature Scaling:** If one feature ranges from 1 to 5 and another from 1 to 1,000, the larger feature will heavily skew the distance calculation. The data must be standardized (e.g., scaled between -1 and 1) so all features contribute equally.
+
+Classifier evaluation metrics and accuracy measures are quantitative tools used to assess the performance and predictive quality of a machine learning classification model. Because real-world models rarely achieve perfect classification, these metrics help you understand exactly what kinds of mistakes your model is making. 
+
+Most of these metrics are derived from a **Confusion Matrix**, a 2x2 table that categorizes the predictions into four outcomes:
+*   **True Positives (TP):** The model correctly predicted the positive class (e.g., correctly identifying a sick patient).
+*   **True Negatives (TN):** The model correctly predicted the negative class (e.g., correctly identifying a healthy person).
+*   **False Positives (FP):** The model incorrectly predicted the positive class (Type I error, or "false alarm").
+*   **False Negatives (FN):** The model incorrectly predicted the negative class (Type II error, or "miss").
+
+Here is a detailed breakdown of the primary evaluation metrics, what they evaluate, and when to use them:
+
+### 1. Accuracy
+*   **What it evaluates:** Accuracy measures the overall correctness of the model. It calculates the proportion of all predictions that were correct.
+*   **How it is calculated:** `(TP + TN) / (Total Population)`.
+*   **When to use it:** Accuracy is an excellent, coarse-grained measure of overall model quality **only when your dataset is balanced**, meaning you have roughly the same number of positive and negative examples.
+*   **When NOT to use it:** You should avoid accuracy if your dataset is highly imbalanced. For example, if you are looking for a rare disease that only 1% of the population has, a "useless" model that simply predicts *everyone* is healthy will still achieve a 99% accuracy rate, completely failing its actual medical purpose. 
+
+### 2. Recall (Sensitivity or True Positive Rate)
+*   **What it evaluates:** Recall measures the model's "probability of detection". It answers the question: *Out of all the actual positive cases in the dataset, what fraction did the model correctly identify?*.
+*   **How it is calculated:** `TP / (TP + FN)`.
+*   **When to use it:** Optimize for recall when **false negatives are highly costly or dangerous**. For instance, in early disease detection or factory defect tracking, it is much worse to accidentally miss a sick patient or a defective product (False Negative) than it is to accidentally flag a healthy person for further testing (False Positive). 
+
+### 3. Precision (Positive Predictive Value)
+*   **What it evaluates:** Precision measures the reliability of the model's positive predictions. It answers the question: *If the model predicts a case is positive, how likely is it that the prediction is actually correct?*.
+*   **How it is calculated:** `TP / (TP + FP)`.
+*   **When to use it:** Optimize for precision when **false positives are highly expensive or problematic**. For example, in a spam email filter, you want high precision because incorrectly sending a highly important, legitimate email to the spam folder (a False Positive) is a severe error. 
+
+### 4. The F1 Score (F-Measure)
+Because increasing precision often decreases recall (and vice versa), the **F1 score** was created to combine both metrics into a single, balanced score. 
+*   **What it evaluates:** The F1 score evaluates the balance between the correctness (precision) and completeness (recall) of a model's positive predictions. It is calculated as the **harmonic mean** of precision and recall. 
+*   **How it is calculated:** `2 * (Precision * Recall) / (Precision + Recall)`. The score ranges from 0 (completely wrong) to 1.0 (perfect precision and recall).
+*   **When to use it:** The F1 score is generally **preferable to accuracy for imbalanced datasets**, particularly in applications like information retrieval or text classification where the positive class is rare and you want a balanced measurement without being skewed by a massive number of True Negatives. 
+*   **Limitations of the F1 Score:** A major criticism of the F1 score is that its formula completely **ignores True Negatives (TN)**. Because it ignores True Negatives, it can generate misleading results in certain scenarios, and it lacks symmetry—meaning if you arbitrarily flip the labels of your data (calling the "positive" samples "negative" and vice versa), your F1 score will completely change. 
+
+### Extending Metrics to Multi-Class Classification
+If you are dealing with more than two categories (multi-class classification), you can adapt these binary metrics using averaging techniques:
+*   **Macro-averaging:** Calculates the metric (like precision or recall) for each individual class independently, and then takes the arithmetic mean. This gives **equal weight to every class**, regardless of how many instances belong to that class, making it useful when you want to ensure minority classes are treated as equally important.
+*   **Micro-averaging:** Aggregates the total counts of True Positives, False Positives, and False Negatives across all classes first, and then calculates the metric. This gives **equal weight to every individual instance** in the dataset. Note that in a standard multi-class problem, the micro-averaged precision, recall, and F1 score will all result in the exact same number, which is identical to the overall accuracy.
+
+*(Note: If you need a single metric for an imbalanced dataset that specifically takes True Negatives into account and resolves the flaws of the F1 score, sources highly recommend the **Matthews Correlation Coefficient (MCC)**, which evaluates all four quadrants of the confusion matrix equally.)*
