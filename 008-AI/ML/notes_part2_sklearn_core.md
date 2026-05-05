@@ -134,6 +134,61 @@ centers_scaled_original_units[cols_to_scale] = scaler.inverse_transform(centers_
 
 ---
 
+## General Flow To get an idea(syntax will be discussed):
+
+How data is setup
+
+### Step 1: The Manual Separation (Defining $X$ and $y$)
+Assume you load your data into a DataFrame called `df`. Before doing any machine learning, you must physically separate the column you want to predict from the rest of the data.
+
+```python
+import pandas as pd
+
+# 1. Load the full dataset (contains Size, Bedrooms, and Price)
+df = pd.read_csv('houses.csv')
+
+# 2. DEFINE THE TARGET (y)
+# You isolate the single column you want the model to predict.
+y = df['Price'] 
+
+# 3. DEFINE THE FEATURES (X)
+# You take the original dataframe and DROP the target column. 
+# What remains are the columns the model will use to learn.
+X = df.drop('Price', axis=1) 
+```
+
+At this point:
+*   `y` is just a 1D list of prices: `[250000, 300000, 200000...]`
+*   `X` is a 2D table containing only Size and Bedrooms.
+
+### Step 2: The Split
+Now, you pass those pre-separated variables into the splitter.
+
+```python
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+```
+Because you already removed 'Price' from `X`, `train_test_split` simply takes the `X` table and chops 30% of the rows off to make `X_test`. It does the same to the `y` list to make `y_test`.
+
+### Step 3: Training (How the model knows what to do)
+The model finally learns the relationship when you call the `.fit()` method. 
+
+```python
+from sklearn.linear_model import LinearRegression
+
+model = LinearRegression()
+
+# THIS is where the model connects the inputs to the output
+model.fit(X_train, y_train)
+```
+When you run `.fit(X_train, y_train)`, the model algorithm essentially does this internally:
+1. It looks at row 1 of `X_train` (e.g., Size=1500, Bedrooms=3).
+2. It looks at the exact corresponding row in `y_train` (e.g., $250,000).
+3. It updates its internal mathematical equation to make the inputs equal the output.
+4. It repeats this for every row in the training data until it finds the optimal equation.
+
+
 ## 4. Train-Test Split
 
 ```python
@@ -163,6 +218,91 @@ X_train, X_test, y_train, y_test = train_test_split(
 **`random_state=42`** — just a seed number. Could be any integer. Ensures the same random split every time you run the code. Without it, you'd get different splits each run.
 
 **`test_size`** — common values: `0.2` (80/20 split) or `0.3` (70/30 split).
+
+### A Little Dry Run To Understand
+The purpose of `train_test_split` is to hide a portion of your data (30% in this case) so you can test if your model actually learned the underlying patterns, or if it just "memorized" the answers. 
+
+To understand `y_train` and `y_test`, we first have to understand the difference between **$X$** and **$y$**.
+
+*   **$X$ (Features):** The inputs or clues you are giving the model. (e.g., Square footage, number of bedrooms). It is usually capitalized because it represents a 2D table/matrix.
+*   **$y$ (Target):** The exact answer you want the model to predict. (e.g., The price of the house). It is lowercase because it is usually a 1D list/series.
+
+Let's look at a simple example with 10 houses.
+
+### The Original Dataset (100% of the data)
+Imagine this is your entire pandas DataFrame before any splitting.
+
+| ID | Size (sq ft) | Bedrooms | **House Price ($)** |
+| :--- | :--- | :--- | :--- |
+| 1 | 1500 | 3 | **250,000** |
+| 2 | 2000 | 4 | **300,000** |
+| 3 | 1200 | 2 | **200,000** |
+| 4 | 1800 | 3 | **280,000** |
+| 5 | 2500 | 4 | **400,000** |
+| 6 | 900 | 1 | **150,000** |
+| 7 | 3000 | 5 | **450,000** |
+| 8 | 1600 | 3 | **260,000** |
+| 9 | 2200 | 4 | **350,000** |
+| 10 | 1400 | 2 | **230,000** |
+
+*   **$X$** is the `Size` and `Bedrooms` columns. Note: We have already split the dataframe to include only the X attributes
+*   **$y$** is the `House Price` column. Note: These are extracted from the main dataframe
+
+---
+
+### What happens when you run `train_test_split`?
+
+The function shuffles the data (because `random_state=42` ensures it shuffles the exact same way every time) and cuts it into 70% (7 rows) and 30% (3 rows).
+
+#### 1. The Training Data (70% - 7 rows)
+This is the study material for your model. It gets to see both the questions ($X$) and the answers ($y$).
+
+**`X_train`** (The study questions)
+| ID | Size (sq ft) | Bedrooms |
+| :--- | :--- | :--- |
+| 5 | 2500 | 4 |
+| 1 | 1500 | 3 |
+| 8 | 1600 | 3 |
+| 3 | 1200 | 2 |
+| 9 | 2200 | 4 |
+| 2 | 2000 | 4 |
+| 6 | 900 | 1 |
+
+**`y_train`** (The study answers)
+| ID | **House Price ($)** |
+| :--- | :--- |
+| 5 | **400,000** |
+| 1 | **250,000** |
+| 8 | **260,000** |
+| 3 | **200,000** |
+| 9 | **350,000** |
+| 2 | **300,000** |
+| 6 | **150,000** |
+
+*How it works:* You run `model.fit(X_train, y_train)`. The model looks at `X_train` and `y_train` together and figures out the math: *"Ah, it seems like every extra bedroom adds about $50k, and every square foot adds..."*
+
+---
+
+#### 2. The Testing Data (30% - 3 rows)
+This is the final exam. 
+
+**`X_test`** (The exam questions)
+| ID | Size (sq ft) | Bedrooms |
+| :--- | :--- | :--- |
+| 7 | 3000 | 5 |
+| 4 | 1800 | 3 |
+| 10 | 1400 | 2 |
+
+*How it works:* You run `predictions = model.predict(X_test)`. The model looks at these 3 houses and guesses the prices based on what it learned earlier. **It does not get to see the actual prices yet.**
+
+**`y_test`** (The exam answer key)
+| ID | **House Price ($)** |
+| :--- | :--- |
+| 7 | **450,000** |
+| 4 | **280,000** |
+| 10 | **230,000** |
+
+*How it works:* You—the programmer—hold onto `y_test`. Once the model makes its predictions, you compare the model's guesses against `y_test` (the true, hidden answers). If the model guessed $440,000 for house 7, you know it's highly accurate. If it guessed $100,000, you know the model failed.
 
 ---
 
